@@ -1,0 +1,33 @@
+package js
+version = 0.1.0
+-- authors =
+-- maintainers =
+-- license =
+-- brief =
+-- readme =
+-- homepage =
+-- sourceloc =
+-- bugtracker =
+
+-- the Idris2 version required (e.g. langversion >= 0.5.1)
+-- langversion
+
+-- packages to add to search path
+depends = deptycheck, prettier
+
+-- modules to install
+modules = Js.Playground.Js
+        , Js.Playground.Demo.Pretty
+        , Js.Playground.Pretty
+        , Js.Playground.Usage.Example
+        , Runner
+
+-- main file (i.e. file to load at REPL)
+main = Runner
+
+-- name of executable
+executable = js-playground
+
+-- opts =
+sourcedir = "src"
+builddir = "build"
