@@ -1,4 +1,4 @@
-module Runner
+module Dynam.Run.Runner
 
 import Data.Fuel
 import Data.List.Lazy
@@ -6,8 +6,15 @@ import Data.List1
 import Data.SortedMap
 import Data.String
 
-import Js.Playground.Usage.Example
-import Js.Playground.Demo.Pretty
+import Dynam.Run.ExprDerive
+import Dynam.Run.NameDerive
+import Dynam.Run.StmtsDerive
+import Dynam.Run.StdConfig
+
+import Dynam.Model.Main
+import Dynam.Model.Primitives
+import Dynam.Pretty.Pretty
+import Dynam.Pretty.Utils
 
 import Test.DepTyCheck.Gen
 import Text.PrettyPrint.Bernardy
@@ -73,52 +80,56 @@ parsePPFuel str = case parsePositive str of
 
 cliOpts : List $ OptDescr $ Config -> Config
 cliOpts =
-  [ MkOpt [] ["seed"]
-      (ReqArg' parseSeed "<seed>,<gamma>")
-      "Sets particular random seed to start with."
-  , MkOpt ['w'] ["pp-width"]
-      (ReqArg' parsePPWidth "<nat>")
-      "Sets the max length for the pretty-printer."
-  , MkOpt ['n'] ["tests-count"]
-      (ReqArg' parseTestsCount "<tests-count>")
-      "Sets the count of tests to generate."
-  , MkOpt [] ["model-fuel"]
-      (ReqArg' parseModelFuel "<fuel>")
-      "Sets how much fuel there is for generation of the model."
-  , MkOpt [] ["pp-fuel"]
-      (ReqArg' parsePPFuel "<fuel>")
-      "Sets how much fuel there is for pretty-printing."
-  ]
+ [ MkOpt [] ["seed"]
+     (ReqArg' parseSeed "<seed>,<gamma>")
+     "Sets particular random seed to start with."
+ , MkOpt ['w'] ["pp-width"]
+     (ReqArg' parsePPWidth "<nat>")
+     "Sets the max length for the pretty-printer."
+ , MkOpt ['n'] ["tests-count"]
+     (ReqArg' parseTestsCount "<tests-count>")
+     "Sets the count of tests to generate."
+ , MkOpt [] ["model-fuel"]
+     (ReqArg' parseModelFuel "<fuel>")
+    "Sets how much fuel there is for generation of the model."
+ , MkOpt [] ["pp-fuel"]
+     (ReqArg' parsePPFuel "<fuel>")
+     "Sets how much fuel there is for pretty-printing."
+ ]
 
 ---------------
 --- Running ---
 ---------------
 
-
-public export
-record NamedCtxt where
-  constructor MkNamedCtxt
-  typecasts : List SupportedTypecast
-  functions : List Function
-  variables : List BasicType
-  fvNames   : UniqNames functions variables
-
-
 run : Config ->
       NamedCtxt ->
       IO ()
 run conf ctxt = do
-  seed <- conf.usedSeed
-  let vals = unGenTryN conf.testsCnt seed $
-               genStmts conf.modelFuel ctxt.typecasts ctxt.functions ctxt.variables Nothing >>=
-                 printGroovy @{ctxt.fvNames} conf.ppFuel
-  Lazy.for_ vals $ \val => do
-    putStrLn "-------------------\n"
-    putStr $ render conf.layoutOpts val
+    seed <- conf.usedSeed
+    let vals = unGenTryN conf.testsCnt seed $
+                genStmts conf.modelFuel ctxt.typecasts ctxt.functions ctxt.variables Void >>=
+                    printGroovy @{ctxt.fvNames} conf.ppFuel
+    Lazy.for_ vals $ \val => do
+        putStrLn "-------------------\n"
+        putStr $ render conf.layoutOpts val
 
 ---------------
 --- Startup ---
 ---------------
+public export
+data SupportedLanguage = Groovy
+
+public export
+0 PP : SupportedLanguage -> Type
+PP language = {casts : _} -> {funs : _} -> {vars : _} -> {retTy : _} -> {opts : _} ->
+              (names : UniqNames funs vars) =>
+              Fuel ->
+              Stmts casts funs vars retTy -> Gen0 $ Doc opts
+
+supportedLanguages : SortedMap String (l : SupportedLanguage ** (NamedCtxt, PP l))
+supportedLanguages = fromList
+  [ ("groovy", (Groovy ** (stdLib, printGroovy)))
+  ]
 
 export
 main : IO ()
@@ -127,9 +138,14 @@ main = do
   let usage : Lazy String := usageInfo "Usage: \{fromMaybe "pil-fun" $ head' args} [options] <language>" cliOpts
   let MkResult options nonOptions [] [] = getOpt Permute cliOpts $ drop 1 args
     | MkResult {unrecognized=unrecOpts@(_::_), _} => if "help" `elem` unrecOpts
-                                                       then putStrLn usage
-                                                       else die "unrecodnised options \{show unrecOpts}\n\{usage}"
+                                                      then putStrLn usage
+                                                      else die "unrecodnised options \{show unrecOpts}\n\{usage}"
     | MkResult {errors=es@(_::_), _}              => die "arguments parse errors \{show es}\n\{usage}"
+  let [lang] = nonOptions
+    | []   => die "no language is given, supported languages: groovy\n\{usage}"
+    | many => die "too many languages are given\n\{usage}"
+  let Just (_ ** (ctxt, pp)) = lookup lang supportedLanguages
+    | Nothing => die "unknown language \{lang}, supported languages groovy\n\{usage}"
 
   let config = foldl (flip apply) defaultConfig options
 

@@ -1,7 +1,7 @@
 [install]
-whitelist = [ "deptycheck" ]
+whitelist = [ "deptycheck", "dynam" ]
 
-[custom.all.js]
+[custom.all.dynam]
 type = "local"
 path = "."
-ipkg = "js.ipkg"
+ipkg = "dynam.ipkg"
