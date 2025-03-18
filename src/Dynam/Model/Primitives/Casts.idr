@@ -7,7 +7,7 @@ export infix 1 %=
 public export
 record SupportedTypecast where
     constructor (%=)
-    MainType : BasicType
+    MainType : BasicType False
     ConvertableTo : ListOfBasicTypes
 
 public export
@@ -16,11 +16,11 @@ data ListOfSupportedCasts : Type where
     (::) : SupportedTypecast -> ListOfSupportedCasts -> ListOfSupportedCasts
 
 public export
-data IsCastable : SupportedTypecast -> BasicType -> BasicType -> Type where
+data IsCastable : SupportedTypecast -> (from : BasicType False) -> (to : BasicType False) -> Type where
     MakeCast : Contains tos to -> IsCastable (from %= tos) from to
 
 public export
-data Castable : ListOfSupportedCasts -> BasicType -> BasicType -> Type where
+data Castable : ListOfSupportedCasts -> (from : BasicType False) -> (to : BasicType False) -> Type where
     ReflCast  : Castable _ ty ty
     FirstCast : IsCastable cst from to -> Castable (cst :: _) from to
     NextCast  : Castable casts from to -> Castable (_ :: casts) from to

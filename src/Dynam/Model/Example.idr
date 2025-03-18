@@ -8,7 +8,7 @@ import Data.Nat
 import Data.So
 
 StdF : ListOfFunctions
-StdF = [
+StdF = [    
       [Number] ==> Boolean
     , [Number, Number] ==> Number -- +
     , [Number, Number] ==> Void   -- dum
@@ -18,7 +18,8 @@ StdF = [
 
 StdC : ListOfSupportedCasts
 StdC = [
-    Boolean %= [Number]
+    Boolean %= [Number],
+    Number  %= [Boolean]
 ]
 
 Pred : IndexIn StdF
@@ -47,7 +48,8 @@ program = do
         0 #= Const (I 14)
 --         0 #= Var 1
 --         0 #= Var 2
---         1 #= Invoke Plus [ Var 0, Var 2 ]
+        2 #= Invoke Plus [ Var 0, Var 2 ]
+        -- NewV Void $ Invoke Dum [ Var 0, Var 1 ]
 
 --         -- Call Dum [ Const (I 6), Const (B False) ]
 --         If  ( Const (B True) )

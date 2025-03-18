@@ -9,11 +9,15 @@ public export
 record Function where
     constructor (==>)
     From : ListOfBasicTypes
-    To : BasicType
+    To : BasicType isVoid
 
 public export
 Biinjective (==>) where
     biinjective Refl = (Refl, Refl)
+
+public export
+Injective (==>) where
+    injective Refl = Refl
 
 public export
 data ListOfFunctions : Type where

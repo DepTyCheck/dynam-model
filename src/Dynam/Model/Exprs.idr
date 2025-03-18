@@ -14,8 +14,9 @@ data ExprList : ListOfSupportedCasts
 
 
 -- available casts -> functions' scope -> variables' scope -> type
+-- Must be non-Void
 public export
-data Expr : ListOfSupportedCasts -> ListOfFunctions -> ListOfBasicTypes -> BasicType -> Type where
+data Expr : ListOfSupportedCasts -> ListOfFunctions -> ListOfBasicTypes -> BasicType False -> Type where
     -- const _
     Const : (x : TypeDeclaration ty) -> Expr casts funs vars ty
     -- var _
@@ -25,7 +26,6 @@ data Expr : ListOfSupportedCasts -> ListOfFunctions -> ListOfBasicTypes -> Basic
     -- function () => {}
     Invoke : (n : IndexIn funs) ->
         AtIndex n (argTypes ==> to) =>
-        So (isNo $ decEq Void to) => --FIXME
         (actualArgs : ExprList casts funs vars retTypes) ->
         ArgsCastable casts retTypes argTypes => 
         Expr casts funs vars to        

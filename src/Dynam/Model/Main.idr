@@ -20,9 +20,9 @@ public export
 data Stmts : (casts : ListOfSupportedCasts) ->
              (funs  : ListOfFunctions) ->
              (vars  : ListOfBasicTypes) ->
-             (retTy : BasicType) -> Type where -- RM retTy?
+             (retTy : BasicType True) -> Type where -- RM retTy?
 
-  NewV : (ty : BasicType) ->
+  NewV : (ty : BasicType False) ->
          (initial : Expr casts funs vars ty) ->
          (cont : Stmts casts funs ((::) ty vars) retTy) ->
          Stmts casts funs vars retTy
@@ -35,8 +35,8 @@ data Stmts : (casts : ListOfSupportedCasts) ->
   ||| lhs #= rhs
   ||| @ lhs Variable that has already been defined
   ||| @ rhs Expression 
-  (#=) : {lhsTy : BasicType} ->
-         {rhsTy : BasicType} ->
+  (#=) : {lhsTy : BasicType False} ->
+         {rhsTy : BasicType False} ->
          (lhs : IndexIn vars) ->
          AtIndex lhs lhsTy =>
          (rhs : Expr casts funs vars rhsTy) ->
@@ -90,12 +90,12 @@ genStmts' : Fuel ->
            (csts : ListOfSupportedCasts) ->
            (funcs : ListOfFunctions) ->
            (varrs : ListOfBasicTypes) ->
-           (rettTy : BasicType) ->
-           (Fuel -> (tys : ListOfBasicTypes) -> (ty : BasicType) -> Gen MaybeEmpty (Contains tys ty)) =>
-           (Fuel -> (cast : SupportedTypecast) -> (from : BasicType) -> (to : BasicType) -> Gen MaybeEmpty (IsCastable cast from to)) =>
-           (Fuel -> (casts : ListOfSupportedCasts) -> (from : BasicType) -> (to : BasicType) -> Gen MaybeEmpty (Castable casts from to)) =>
+           (rettTy : BasicType True) ->
+           (Fuel -> (tys : ListOfBasicTypes) -> (ty : BasicType False) -> Gen MaybeEmpty (Contains tys ty)) =>
+           (Fuel -> (cast : SupportedTypecast) -> (from : BasicType False) -> (to : BasicType False) -> Gen MaybeEmpty (IsCastable cast from to)) =>
+           (Fuel -> (casts : ListOfSupportedCasts) -> (from : BasicType False) -> (to : BasicType False) -> Gen MaybeEmpty (Castable casts from to)) =>
            (Fuel -> (casts : ListOfSupportedCasts) -> (froms : ListOfBasicTypes) -> (tos : ListOfBasicTypes) -> Gen MaybeEmpty (ArgsCastable casts froms tos)) =>
-           (Fuel -> (casts : ListOfSupportedCasts) -> (funs : ListOfFunctions) -> (vars : ListOfBasicTypes) -> (resTy : BasicType) -> Gen MaybeEmpty (Expr casts funs vars resTy)) =>
+           (Fuel -> (casts : ListOfSupportedCasts) -> (funs : ListOfFunctions) -> (vars : ListOfBasicTypes) -> (resTy : BasicType False) -> Gen MaybeEmpty (Expr casts funs vars resTy)) =>
            (Fuel -> (casts : ListOfSupportedCasts) -> (funs : ListOfFunctions) -> (vars : ListOfBasicTypes) -> (resTys : ListOfBasicTypes) -> Gen MaybeEmpty (ExprList casts funs vars resTys)) =>
            Gen MaybeEmpty $ Stmts csts funcs varrs rettTy
 
@@ -104,6 +104,6 @@ genStmts : Fuel ->
            (casts : ListOfSupportedCasts) ->
            (funs : ListOfFunctions) ->
            (vars : ListOfBasicTypes) ->
-           (retTy : BasicType) ->
+           (retTy : BasicType True) ->
            Gen MaybeEmpty $ Stmts casts funs vars retTy
 genStmts fl casts funs vars retTy = genStmts' @{genContains} @{genIsCastable} @{genCastable} @{genArgsCastable} @{genExpr'} @{genExprList} fl casts funs vars retTy

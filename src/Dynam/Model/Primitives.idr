@@ -10,7 +10,20 @@ import public Dynam.Model.Primitives.Types
 import public Dynam.Model.Primitives.Casts
 import public Dynam.Model.Primitives.Funs
 
+public export
+[FunR] {r : BasicType voidIs} -> Injective (\l => l ==> r) where
+    injective Refl = Refl
 
 export
 DecEq Function where
-    decEq (f ==> t) (f' ==> t') = decEqCong2 (decEq f f') (decEq t t')
+    decEq (f ==> Void) (f' ==> Void   ) = decEqCong @{FunR} $ decEq f f'
+    decEq (f ==> Void) (f' ==> Number ) = No $ \case Refl impossible
+    decEq (f ==> Void) (f' ==> Boolean) = No $ \case Refl impossible
+
+    decEq (f ==> Boolean) (f' ==> Void   ) = No $ \case Refl impossible
+    decEq (f ==> Boolean) (f' ==> Number ) = No $ \case Refl impossible
+    decEq (f ==> Boolean) (f' ==> Boolean) = decEqCong @{FunR} $ decEq f f'
+
+    decEq (f ==> Number) (f' ==> Void   ) = No $ \case Refl impossible
+    decEq (f ==> Number) (f' ==> Number ) = decEqCong @{FunR} $ decEq f f'
+    decEq (f ==> Number) (f' ==> Boolean) = No $ \case Refl impossible

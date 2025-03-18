@@ -6,22 +6,18 @@ import public Data.List.Quantifiers
 import public Decidable.Equality
 import public Decidable.Decidable
 
-public export
-data BasicType : Type where
-    Void    : BasicType
-    Number  : BasicType
-    -- Str     : BasicType
-    Boolean : BasicType
 
 public export
-data MaybeType : Type where
-    Nothing : MaybeType
-    Just    : BasicType -> MaybeType
+data BasicType : (isVoid : Bool) -> Type where
+    Void    : BasicType True
+    Number  : BasicType False
+    -- Str     : BasicType
+    Boolean : BasicType False
 
 public export
 data ListOfBasicTypes : Type where
     Nil : ListOfBasicTypes
-    (::) : BasicType -> ListOfBasicTypes -> ListOfBasicTypes
+    (::) : BasicType False -> ListOfBasicTypes -> ListOfBasicTypes
 
 public export
 Biinjective Dynam.Model.Primitives.Types.(::) where
@@ -35,13 +31,13 @@ data IndexIn : ListOfBasicTypes -> Type where
 ||| @ idx Index in ListOfBasicTypes
 ||| @ ty Return type
 public export
-data AtIndex : {sx : ListOfBasicTypes} -> (idx : IndexIn sx) -> (ty : BasicType) -> Type where
+data AtIndex : {sx : ListOfBasicTypes} -> (idx : IndexIn sx) -> (ty : BasicType False) -> Type where
     [search sx idx]
     Here'  : AtIndex {sx = ty :: sx} Here ty
     There' : AtIndex {sx} i ty -> AtIndex {sx = x :: sx} (There i) ty
 
 public export
-data Contains : ListOfBasicTypes -> BasicType -> Type where
+data Contains : ListOfBasicTypes -> BasicType False -> Type where
     Single : Contains (ty :: other) ty
     Multiple : Contains tys ty -> Contains (new :: tys) ty
 
@@ -57,33 +53,28 @@ public export
 
 
 public export
-data TypeDeclaration : BasicType -> Type where
+data TypeDeclaration : BasicType isVoid -> Type where
     I : Nat    -> TypeDeclaration Number
     B : Bool   -> TypeDeclaration Boolean
     -- S : String -> TypeDeclaration Str
 
 public export
-DecEq BasicType where
+DecEq (BasicType isVoid) where
     decEq Number  Number  = Yes Refl
     -- decEq Number  Str     = No $ \case Refl impossible
     decEq Number  Boolean = No $ \case Refl impossible
-    decEq Number  Void    = No $ \case Refl impossible
     -- decEq Str     Number  = No $ \case Refl impossible
     -- decEq Str     Str     = Yes Refl
     -- decEq Str     Boolean = No $ \case Refl impossible
-    -- decEq Str     Void    = No $ \case Refl impossible
     decEq Boolean Number  = No $ \case Refl impossible
     -- decEq Boolean Str     = No $ \case Refl impossible
     decEq Boolean Boolean = Yes Refl
-    decEq Boolean Void    = No $ \case Refl impossible
-    decEq Void    Number  = No $ \case Refl impossible
-    -- decEq Void    Str     = No $ \case Refl impossible
-    decEq Void    Boolean = No $ \case Refl impossible
+
     decEq Void    Void    = Yes Refl
 
 
 public export
-Eq BasicType where
+Eq (BasicType isVoid) where
     x == y = isYes $ decEq x y
 
 public export
@@ -92,3 +83,7 @@ DecEq ListOfBasicTypes where
     decEq (x :: xs) [] = No $ \case Refl impossible
     decEq [] (x :: xs) = No $ \case Refl impossible
     decEq (x :: xs) (y :: ys) = decEqCong2 (decEq x y) (decEq xs ys)
+
+public export
+Eq (ListOfBasicTypes) where
+    x == y = isYes $ decEq x y

@@ -5,3 +5,11 @@ whitelist = [ "deptycheck", "dynam" ]
 type = "local"
 path = "."
 ipkg = "dynam.ipkg"
+
+
+[custom.all.deptycheck]
+type = "git"
+ipkg = "deptycheck.ipkg"
+url  = "https://github.com/buzden/deptycheck"
+commit = "9de1cdf381e094dc92ebb448545c2b215faba747"
+
