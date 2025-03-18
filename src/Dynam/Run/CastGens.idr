@@ -13,7 +13,7 @@ import Data.Fuel
 --     Multiple : Contains tys ty -> Contains (new :: tys) ty
 
 export
-genContains : Fuel -> (tys : ListOfBasicTypes) -> (ty : BasicType) -> Gen MaybeEmpty (Contains tys ty)
+genContains : Fuel -> (tys : ListOfBasicTypes) -> (ty : BasicType False) -> Gen MaybeEmpty (Contains tys ty)
 genContains _ Nil _ = empty
 genContains _ (this :: other) ty = case decEq this ty of
                                         Yes Refl => pure $ Single  {ty} {other}
@@ -35,8 +35,8 @@ genContains _ (this :: other) ty = case decEq this ty of
 export
 genIsCastable : Fuel ->
                 (cast : SupportedTypecast) ->
-                (from : BasicType) ->
-                (to : BasicType) ->
+                (from : BasicType False) ->
+                (to   : BasicType False) ->
                 Gen MaybeEmpty (IsCastable cast from to)
 genIsCastable fl (from' %= tos) from to = case decEq from' from of
                                               Yes Refl => MakeCast <$> genContains fl tos to
@@ -51,8 +51,8 @@ genIsCastable fl (from' %= tos) from to = case decEq from' from of
 export
 genCastable : Fuel ->
               (casts : ListOfSupportedCasts) ->
-              (from : BasicType) ->
-              (to : BasicType) ->
+              (from  : BasicType False) ->
+              (to    : BasicType False) ->
               Gen MaybeEmpty (Castable casts from to)
 genCastable _ Nil from to = case decEq from to of
                                 Yes Refl => pure ReflCast
@@ -109,9 +109,9 @@ export
 genExpr : Fuel ->
           (Fuel -> (casts : ListOfSupportedCasts) -> (funs : ListOfFunctions) -> (vars : ListOfBasicTypes) -> (resTys : ListOfBasicTypes) -> Gen MaybeEmpty (ExprList casts funs vars resTys)) =>
           (casts : ListOfSupportedCasts) ->
-          (funs : ListOfFunctions) ->
-          (vars : ListOfBasicTypes) ->
-          (resTy : BasicType) ->
+          (funs  : ListOfFunctions) ->
+          (vars  : ListOfBasicTypes) ->
+          (resTy : BasicType False) ->
           Gen MaybeEmpty (Expr casts funs vars resTy)
 
 export
@@ -125,9 +125,9 @@ genExprList : Fuel ->
 export
 genExpr' : Fuel ->
           (casts : ListOfSupportedCasts) ->
-          (funs : ListOfFunctions) ->
-          (vars : ListOfBasicTypes) ->
-          (resTy : BasicType) ->
+          (funs  : ListOfFunctions) ->
+          (vars  : ListOfBasicTypes) ->
+          (resTy : BasicType False) ->
           Gen MaybeEmpty (Expr casts funs vars resTy)
 genExpr' Dry casts funs vars resTy = genExpr @{\_, _, _, _, _ => empty} Dry casts funs vars resTy
 genExpr' (More fl) casts funs vars resTy = genExpr @{\_ => genExprList fl} (More fl) casts funs vars resTy
