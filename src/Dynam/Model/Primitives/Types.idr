@@ -8,16 +8,20 @@ import public Decidable.Decidable
 
 
 public export
-data BasicType : (isVoid : Bool) -> Type where
-    Void    : BasicType True
-    Number  : BasicType False
+data BasicType : Type where
+    Number  : BasicType
     -- Str     : BasicType
-    Boolean : BasicType False
+    Boolean : BasicType
+
+public export
+data MaybeVoidableType : Type where
+    Void : MaybeVoidableType
+    NonVoidable : BasicType -> MaybeVoidableType
 
 public export
 data ListOfBasicTypes : Type where
     Nil : ListOfBasicTypes
-    (::) : BasicType False -> ListOfBasicTypes -> ListOfBasicTypes
+    (::) : BasicType -> ListOfBasicTypes -> ListOfBasicTypes
 
 public export
 Biinjective Dynam.Model.Primitives.Types.(::) where
@@ -31,14 +35,14 @@ data IndexIn : ListOfBasicTypes -> Type where
 ||| @ idx Index in ListOfBasicTypes
 ||| @ ty Return type
 public export
-data AtIndex : {sx : ListOfBasicTypes} -> (idx : IndexIn sx) -> (ty : BasicType False) -> Type where
+data AtIndex : {sx : ListOfBasicTypes} -> (idx : IndexIn sx) -> (ty : BasicType) -> Type where
     [search sx idx]
     Here'  : AtIndex {sx = ty :: sx} Here ty
     There' : AtIndex {sx} i ty -> AtIndex {sx = x :: sx} (There i) ty
 
 public export
-data Contains : ListOfBasicTypes -> BasicType False -> Type where
-    Single : Contains (ty :: other) ty
+data Contains : ListOfBasicTypes -> BasicType -> Type where
+    Single   : Contains (ty :: other) ty
     Multiple : Contains tys ty -> Contains (new :: tys) ty
 
 public export
@@ -53,13 +57,13 @@ public export
 
 
 public export
-data TypeDeclaration : BasicType isVoid -> Type where
+data TypeDeclaration : BasicType -> Type where
     I : Nat    -> TypeDeclaration Number
     B : Bool   -> TypeDeclaration Boolean
     -- S : String -> TypeDeclaration Str
 
 public export
-DecEq (BasicType isVoid) where
+DecEq BasicType where
     decEq Number  Number  = Yes Refl
     -- decEq Number  Str     = No $ \case Refl impossible
     decEq Number  Boolean = No $ \case Refl impossible
@@ -70,12 +74,16 @@ DecEq (BasicType isVoid) where
     -- decEq Boolean Str     = No $ \case Refl impossible
     decEq Boolean Boolean = Yes Refl
 
-    decEq Void    Void    = Yes Refl
-
+public export
+[nvoid] Injective (\ty => NonVoidable ty) where
+    injective Refl = Refl
 
 public export
-Eq (BasicType isVoid) where
-    x == y = isYes $ decEq x y
+DecEq MaybeVoidableType where
+    decEq Void Void = Yes Refl
+    decEq (NonVoidable ty1) (NonVoidable ty2) = decEqCong @{nvoid} $ decEq ty1 ty2
+    decEq Void (NonVoidable _) = No $ \case Refl impossible
+    decEq (NonVoidable _) Void = No $ \case Refl impossible
 
 public export
 DecEq ListOfBasicTypes where
@@ -83,7 +91,3 @@ DecEq ListOfBasicTypes where
     decEq (x :: xs) [] = No $ \case Refl impossible
     decEq [] (x :: xs) = No $ \case Refl impossible
     decEq (x :: xs) (y :: ys) = decEqCong2 (decEq x y) (decEq xs ys)
-
-public export
-Eq (ListOfBasicTypes) where
-    x == y = isYes $ decEq x y

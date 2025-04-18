@@ -9,8 +9,8 @@ import Data.So
 
 StdF : ListOfFunctions
 StdF = [    
-      [Number] ==> Boolean
-    , [Number, Number] ==> Number -- +
+      [Number] ==> (NonVoidable Boolean)
+    , [Number, Boolean] ==> (NonVoidable Number) -- +
     , [Number, Number] ==> Void   -- dum
     -- , []
 ]
@@ -31,43 +31,33 @@ Plus = 1
 Dum : IndexIn StdF
 Dum = 0
 
--- ss : Contains [Number] Number
--- ss = Single
-
--- check : IsCastable (Boolean %= [Number]) Boolean Number
--- check = MakeCast Single -- (Boolean %= [Number]) Boolean Number
-
--- ch : Match StdC Boolean Number
--- ch = FirstCast check
-
-program : Stmts StdC StdF [] Void
+program : Stmts StdC StdF []
 program = do
-{- 0 -} NewV Number $ Const (I 10)
-{- 1 -} NewV Number $ Const (I 11)
-{- 2 -} NewV Boolean $ Const (B True)
-        0 #= Const (I 14)
+{- 0 -} NewV Number $ Literal (I 10)
+{- 1 -} NewV Number $ Literal (I 11)
+{- 2 -} NewV Boolean $ Literal (B True)
+        0 #= Literal (I 14)
 --         0 #= Var 1
 --         0 #= Var 2
         2 #= Invoke Plus [ Var 0, Var 2 ]
         -- NewV Void $ Invoke Dum [ Var 0, Var 1 ]
 
---         -- Call Dum [ Const (I 6), Const (B False) ]
---         If  ( Const (B True) )
---             (do
---                 1 #= Var 0
---                 Ret)
---             (do
---                 1 #= Const (B True)
---                 Ret)
---         -- 2 #= Var 1
+        Call Dum [ Literal (I 6), Literal (B False) ]
+        If  ( Literal (B True) )
+            (do
+                1 #= Var 0
+                Ret)
+            (do
+                1 #= Literal (B True)
+                Ret)
+        2 #= Var 1
 
--- {- 3 -} NewV Number $ Const (I 10)
---         While ( Invoke Pred [Var 3] )
---             (do
---                 3 #= Invoke Plus [ Var 3, Const (I 1) ]
---                 Ret
---             )
-
+{- 3 -} NewV Number $ Literal (I 10)
+        While ( Invoke Pred [Var 3] )
+            (do
+                3 #= Invoke Plus [ Var 3, Literal (I 1) ]
+                Ret
+            )
         Ret
 
 -- export

@@ -10,6 +10,7 @@ import Dynam.Run.ExprDerive
 import Dynam.Run.NameDerive
 import Dynam.Run.StmtsDerive
 import Dynam.Run.StdConfig
+import Dynam.Run.Labels
 
 import Dynam.Model.Main
 import Dynam.Model.Primitives
@@ -17,11 +18,19 @@ import Dynam.Pretty.Pretty
 import Dynam.Pretty.Utils
 
 import Test.DepTyCheck.Gen
+import Test.DepTyCheck.Gen.Coverage
+import Test.DepTyCheck.Gen.Labels
 import Text.PrettyPrint.Bernardy
+import Data.Functor.TraverseSt
 
 import System
+import System.File
+import System.Clock
 import System.GetOpts
 import System.Random.Pure.StdGen
+
+import Control.Monad.Either
+import Control.Monad.Random
 
 %default total
 
@@ -98,22 +107,6 @@ cliOpts =
  ]
 
 ---------------
---- Running ---
----------------
-
-run : Config ->
-      NamedCtxt ->
-      IO ()
-run conf ctxt = do
-    seed <- conf.usedSeed
-    let vals = unGenTryN conf.testsCnt seed $
-                genStmts conf.modelFuel ctxt.typecasts ctxt.functions ctxt.variables Void >>=
-                    printGroovy @{ctxt.fvNames} conf.ppFuel
-    Lazy.for_ vals $ \val => do
-        putStrLn "-------------------\n"
-        putStr $ render conf.layoutOpts val
-
----------------
 --- Startup ---
 ---------------
 public export
@@ -121,15 +114,118 @@ data SupportedLanguage = Groovy
 
 public export
 0 PP : SupportedLanguage -> Type
-PP language = {casts : _} -> {funs : _} -> {vars : _} -> {retTy : _} -> {opts : _} ->
+PP language = {casts : _} -> {funs : _} -> {vars : _} -> {opts : _} ->
               (names : UniqNames funs vars) =>
               Fuel ->
-              Stmts casts funs vars retTy -> Gen0 $ Doc opts
+              Stmts casts funs vars -> Gen0 $ Doc opts
 
 supportedLanguages : SortedMap String (l : SupportedLanguage ** (NamedCtxt, PP l))
 supportedLanguages = fromList
   [ ("groovy", (Groovy ** (stdLib, printGroovy)))
   ]
+
+forS_ : Monad f => (seed : s) -> LazyList a -> (s -> a -> f s) -> f ()
+forS_ seed []      g = pure ()
+forS_ seed (x::xs) g = forS_ !(g seed x) xs g
+
+
+-- [LabelHandler] HasIO io => CanManageLabels io where
+--     manageLabel lbl = putStrLn {io} $ show lbl
+
+-- [PrintAllLabels] HasIO io => CanManageLabels io where
+--   manageLabel = putStrLn . show
+
+-- printLabels : HasIO io => MonadError () io => Config -> NamedCtxt -> io ()
+-- printLabels cfg ctx = do
+--     let testFile = \ind : Nat => "tests\{show ind}.info"
+--     let cnt = cfg.testsCnt
+--     -- randGen <- pure cfg.usedSeed
+
+--     let vals = genStmts cfg.modelFuel ctx.typecasts ctx.functions ctx.variables >>=
+--                     printGroovy @{ctx.fvNames} cfg.ppFuel <&> render cfg.layoutOpts
+
+--     let res = unGen @{%search} @{%search} {m=IO} vals
+
+--     Data.List.Lazy.for_ (iterateN cnt (\n : Nat => n + 1) 0) $ \idx => do
+
+--         pure ?hl
+
+-- CanManageLabels
+
+
+
+saveTestsAndCov : HasIO io => MonadError String io => Config -> CoverageGenInfo g -> Gen MaybeEmpty String -> io Unit
+saveTestsAndCov conf cgi gen = do
+    randGen <- liftIO conf.usedSeed
+    let covFile = "coverage.info"
+    let testFile = \ind : Nat => "tests\{show ind}.info"
+    let cnt = conf.testsCnt
+
+    -- smth <- unGenLC ?hls
+
+    forS_ cgi (withIndex $ unGenTryND cnt randGen gen) $ \cgi, (ind, mcov, test) => do
+        writeFile (testFile ind) test >>= either (throwError . show) pure
+
+        let cgi = registerCoverage mcov cgi 
+        writeFile covFile (show @{Colourful} cgi) >>= either (throwError . show) pure
+    
+        putStrLn "Run #\{show ind}"
+
+        pure cgi
+
+
+---------------
+--- Running ---
+---------------
+
+%ambiguity_depth 4
+
+run : HasIO io =>
+      MonadError String io =>
+      Config ->
+      NamedCtxt ->
+      io ()
+run conf ctxt = do
+    let vals =  genStmts conf.modelFuel ctxt.typecasts ctxt.functions ctxt.variables >>=
+                     printGroovy @{ctxt.fvNames} conf.ppFuel <&> render conf.layoutOpts
+                    
+    saveTestsAndCov conf (initCoverageInfo genStmts) vals
+
+    -- let testCount = conf.testsCnt
+    -- -- seed <- cast <$> conf.usedSeed
+    -- -- f <- getNat
+    -- -- cLim <- getNat
+    -- randomGen <- liftIO conf.usedSeed
+    -- let clock : ?; clock = Monotonic
+
+    -- ch <- makeChannel {a=Message}
+    -- let cgi = initCoverageInfo genStmts
+    -- h <- Dynam.Run.Labels.start ch cgi
+
+    -- evalRandomT randomGen $ Data.List.Lazy.for_ (fromList [1..testCount]) $ \k => do
+    --     startMoment <- lift $ liftIO $ clockTime clock
+    --     -- test' <- unGenLC h $ genSink (limit f) {n=5} Nothing [Src [JustV (Undet I 0), JustV (Undet I 1), JustV (Det $ RawI 1), JustV (Det $ RawB True), JustV (Undet B 2)]]
+    --     test' <- unGenLC h $ genStmts conf.modelFuel ctxt.typecasts ctxt.functions ctxt.variables
+    --     -- test' <- unGenLC h $ genLinearBlock (limit f) cLim [l] [JustV (Undet I 0), JustV (Undet I 1), JustV (Det $ RawI 1), JustV (Det $ RawB True), JustV (Undet B 2)]
+    --     finishMoment <- lift $ liftIO $ clockTime clock
+
+    --     when (k < testCount) $ Dynam.Run.Labels.divide h
+
+    --     let diff = timeDifference finishMoment startMoment
+    --     let diff_str = showTime 5 5 diff
+
+    --     putStr "Test=\{show k}, time spent=\{diff_str}: "
+
+    --     case test' of
+    --             (Just test) => do
+    --                 putStrLn "Successful\n"
+    --                 -- code <- liftIO $ printGroovy @{ctxt.fvNames} conf.ppFuel test <&> render conf.layoutOpts
+    --                 -- putStrLn "\{code}\n"
+    --             Nothing => do
+    --                 putStrLn "Failed"
+
+    -- Dynam.Run.Labels.stop h
+
 
 export
 main : IO ()
@@ -149,4 +245,4 @@ main = do
 
   let config = foldl (flip apply) defaultConfig options
 
-  run config ctxt
+  runEitherT {m=IO} (run config ctxt) >>= either (die . (++) "Error: ") pure

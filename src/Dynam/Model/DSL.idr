@@ -46,6 +46,6 @@ namespace VarDSL
         _ | n' = natToIndexIn (length sx `minus` S n') @{reverseLTMinus}
 
 public export %inline
-(>>) : (Stmts c' f' v' rt' -> Stmts c f v rt) -> Stmts c' f' v' rt' -> Stmts c f v rt
+(>>) : (Stmts c' f' v' -> Stmts c f v) -> Stmts c' f' v' -> Stmts c f v
 (>>) = id
 

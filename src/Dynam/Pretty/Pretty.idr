@@ -83,15 +83,16 @@ printFunCall p name args = do
     -- Call for bitwise infix extension method
     (True, [Evidence _ l, Evidence _ r], True) => pure $ parenthesise (p >= App) $ !(printExpr App l) <++> f <++> !(printExpr App r)
     -- Call for appropriate extension method with 0, 2 or more arguments
+    (True, Evidence _ fst :: (Evidence _ snd :: Nil), _) => pure $ parenthesise (p >= App) $ !(printExpr App fst) <+> f <+> !(printExpr App snd)
     (True, Evidence _ head :: args, _) => pure $ parenthesise (p >= App) $ !(printExpr App head) <+> "." <+> f <+> !(tupledArgs args)
     -- Call for normal function
     _ => pure $ parenthesise (p >= App && isUnaryOp fn args) $ hang' 2 f !(tupledArgs args)
 
 
-printExpr p $ Const $ B False  = pure $ "false"
-printExpr p $ Const $ B True   = pure $ "true"
+printExpr p $ Literal $ B False  = pure $ "false"
+printExpr p $ Literal $ B True   = pure $ "true"
 
-printExpr p $ Const $ I num    = pure $ line $ show num
+printExpr p $ Literal $ I num    = pure $ line $ show num
 -- printExpr p $ Const $ S str = pure $ line $ str
 
 printExpr p $ Var var          = pure $ line $ varName names var
@@ -99,24 +100,24 @@ printExpr p $ Var var          = pure $ line $ varName names var
 printExpr p $ Invoke name args = assert_total printFunCall p name args
 
 
-printStmts : {funs : _} -> {vars : _} -> {retTy : _} -> {opts : _} ->
+printStmts : {funs : _} -> {vars : _} -> {opts : _} ->
              (names : UniqNames funs vars) =>
              (newNames : Gen0 String) =>
              Fuel ->
              (toplevel : Bool) ->
-             Stmts casts funs vars retTy -> Gen0 $ Doc opts
+             Stmts casts funs vars -> Gen0 $ Doc opts
 
 
 --------------------------------------------------------------------------------
 -- Main
 
-wrapMain : {funs : _} -> {vars : _} -> {retTy : _} -> {opts : _} ->
+wrapMain : {funs : _} -> {vars : _} -> {opts : _} ->
            (names : UniqNames funs vars) =>
            (newNames : Gen0 String) =>
           --  (0 _ : IfUnsolved retTy Nothing) =>
            Fuel ->
            (indeed : Bool) ->
-           (cont : Maybe $ Stmts casts funs vars retTy) ->
+           (cont : Maybe $ Stmts casts funs vars) ->
            Gen0 (Doc opts) -> Gen0 (Doc opts)
 wrapMain fl False Nothing x = x
 wrapMain fl False (Just cont) x = [| x `vappend` assert_total printStmts fl False cont |]
@@ -142,7 +143,7 @@ printStmts fl tl $ NewV ty initial cont = do
     rhs <- printExpr Open initial
     pure $ flip vappend rest $ hangSep' 2 lhs rhs
 
-printStmts fl tl $ Ret = wrapMain {casts} {funs} {vars} {retTy=Void} fl tl Nothing $ pure empty
+printStmts fl tl $ Ret = wrapMain {casts} {funs} {vars} fl tl Nothing $ pure empty
 
 
 printStmts fl tl $ (#=) n v cont = wrapMain fl tl (Just cont) $ do
@@ -163,12 +164,25 @@ printStmts fl tl $ If cond th el cont = wrapMain fl tl (Just cont) $ do
         , "}"
         ]
 
+printStmts fl tl $ While cond body cont = wrapMain fl tl (Just cont) $ do
+    let pref = "while ("
+    let post = ") {"
+    let header = pref <+> !(printExpr Open cond) <++> post
+    pure $ vsep $
+        [ header
+        , indent' 4 !(printStmts fl False body)
+        , "}"
+        ]
+
+printStmts fl tl $ Call name args cont = wrapMain fl tl (Just cont) $ printFunCall Open name args
+
+
 namesGenGroovy : Gen0 String
 namesGenGroovy = pack <$> listOf {length = choose (1, 10)} (choose ('a', 'z'))
 
 export
-printGroovy : {funs : _} -> {vars : _} -> {retTy : _} -> {opts : _} ->
+printGroovy : {funs : _} -> {vars : _} -> {opts : _} ->
               (names : UniqNames funs vars) =>
               Fuel ->
-              Stmts casts funs vars retTy -> Gen0 $ Doc opts
+              Stmts casts funs vars -> Gen0 $ Doc opts
 printGroovy fl = printStmts {names} {newNames = namesGenGroovy} fl True

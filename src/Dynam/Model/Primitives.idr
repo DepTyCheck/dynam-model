@@ -11,19 +11,13 @@ import public Dynam.Model.Primitives.Casts
 import public Dynam.Model.Primitives.Funs
 
 public export
-[FunR] {r : BasicType voidIs} -> Injective (\l => l ==> r) where
+[FunR] {r : MaybeVoidableType} -> Injective (\l => l ==> r) where
     injective Refl = Refl
 
 export
 DecEq Function where
     decEq (f ==> Void) (f' ==> Void   ) = decEqCong @{FunR} $ decEq f f'
-    decEq (f ==> Void) (f' ==> Number ) = No $ \case Refl impossible
-    decEq (f ==> Void) (f' ==> Boolean) = No $ \case Refl impossible
+    decEq (f ==> Void) (f' ==> NonVoidable _) = No $ \case Refl impossible
 
-    decEq (f ==> Boolean) (f' ==> Void   ) = No $ \case Refl impossible
-    decEq (f ==> Boolean) (f' ==> Number ) = No $ \case Refl impossible
-    decEq (f ==> Boolean) (f' ==> Boolean) = decEqCong @{FunR} $ decEq f f'
-
-    decEq (f ==> Number) (f' ==> Void   ) = No $ \case Refl impossible
-    decEq (f ==> Number) (f' ==> Number ) = decEqCong @{FunR} $ decEq f f'
-    decEq (f ==> Number) (f' ==> Boolean) = No $ \case Refl impossible
+    decEq (f ==> NonVoidable _) (f' ==> Void   ) = No $ \case Refl impossible
+    decEq (f ==> NonVoidable ty1) (f' ==> NonVoidable ty2) = decEqCong2 (decEq f f') (decEqCong @{nvoid} $ decEq ty1 ty2)

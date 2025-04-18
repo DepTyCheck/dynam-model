@@ -52,16 +52,17 @@ public export
 stdLib : NamedCtxt
 stdLib = do
     AddFun False "println" $ [Number] ==> Void
-    AddFun True  "+"       $ [Number, Number] ==> Number
-    AddFun True  "*"       $ [Number, Number] ==> Number
-    AddFun True  "-"       $ [Number] ==> Number
-    AddFun True  "<"       $ [Number, Number] ==> Boolean
-    AddFun True  "<="      $ [Number, Number] ==> Boolean
-    AddFun True  "=="      $ [Number, Number] ==> Boolean
-    AddFun True  "||"      $ [Boolean, Boolean] ==> Boolean
-    AddFun True  "&&"      $ [Boolean, Boolean] ==> Boolean
-    AddFun False "!"       $ [Boolean] ==> Boolean
+    AddFun True  "+"       $ [Number, Number] ==> (NonVoidable Number)
+    AddFun True  "*"       $ [Number, Number] ==> (NonVoidable Number)
+    AddFun False  "-"       $ [Number] ==> (NonVoidable Number)
+    AddFun True  "<"       $ [Number, Number] ==> (NonVoidable Boolean)
+    AddFun True  "<="      $ [Number, Number] ==> (NonVoidable Boolean)
+    AddFun True  "=="      $ [Number, Number] ==> (NonVoidable Boolean)
+    AddFun True  "||"      $ [Boolean, Boolean] ==> (NonVoidable Boolean)
+    AddFun True  "&&"      $ [Boolean, Boolean] ==> (NonVoidable Boolean)
+    AddFun False "!"       $ [Boolean] ==> (NonVoidable Boolean)
     
-    AddCast $ Number %= [Boolean]
+    AddCast $ Number  %= [Boolean]
+    AddCast $ Boolean %= [Number]
     Enough
 

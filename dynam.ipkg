@@ -12,10 +12,10 @@ version = 0.1.0
 -- the Idris2 version required (e.g. langversion >= 0.5.1)
 -- langversion
 
-prebuild = "sh parallel.sh"
+-- prebuild = "sh parallel.sh"
 
 -- packages to add to search path
-depends = deptycheck, prettier, getopts
+depends = deptycheck, prettier, getopts, weaker-traversals
 
 -- modules to install
 modules = Dynam.Model.Main
