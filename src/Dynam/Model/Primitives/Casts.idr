@@ -8,7 +8,7 @@ public export
 record SupportedTypecast where
     constructor (%=)
     MainType : BasicType
-    ConvertableTo : ListOfBasicTypes
+    ConvertableTo : BasicType
 
 public export
 data ListOfSupportedCasts : Type where
@@ -18,6 +18,6 @@ data ListOfSupportedCasts : Type where
 public export
 data Castable : ListOfSupportedCasts -> (from : BasicType) -> (to : BasicType) -> Type where
     ReflCast  : Castable _ ty ty
-    FirstCast : Contains tos to -> Castable ((from %= tos) :: _) from to
+    FirstCast : Castable ((from %= to) :: _) from to
     NextCast  : Castable casts from to -> Castable (_ :: casts) from to
 

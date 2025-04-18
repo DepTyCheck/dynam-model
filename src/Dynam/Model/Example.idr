@@ -18,8 +18,8 @@ StdF = [
 
 StdC : ListOfSupportedCasts
 StdC = [
-    Boolean %= [Number],
-    Number  %= [Boolean]
+    Boolean %= Number,
+    Number  %= Boolean
 ]
 
 Pred : IndexIn StdF

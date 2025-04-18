@@ -54,7 +54,7 @@ stdLib = do
     AddFun False "println" $ [Number] ==> Void
     AddFun True  "+"       $ [Number, Number] ==> (NonVoidable Number)
     AddFun True  "*"       $ [Number, Number] ==> (NonVoidable Number)
-    AddFun False  "-"       $ [Number] ==> (NonVoidable Number)
+    AddFun False "-"       $ [Number] ==> (NonVoidable Number)
     AddFun True  "<"       $ [Number, Number] ==> (NonVoidable Boolean)
     AddFun True  "<="      $ [Number, Number] ==> (NonVoidable Boolean)
     AddFun True  "=="      $ [Number, Number] ==> (NonVoidable Boolean)
@@ -62,7 +62,7 @@ stdLib = do
     AddFun True  "&&"      $ [Boolean, Boolean] ==> (NonVoidable Boolean)
     AddFun False "!"       $ [Boolean] ==> (NonVoidable Boolean)
     
-    AddCast $ Number  %= [Boolean]
-    AddCast $ Boolean %= [Number]
+    AddCast $ Number  %= Boolean
+    AddCast $ Boolean %= Number
     Enough
 
