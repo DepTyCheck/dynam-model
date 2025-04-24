@@ -25,7 +25,7 @@ deps-build:
   stage: build
   script:
     - tar -xvf "pack.tar" --one-top-level=/ --touch
-    - pack install-deps deptycheck
+    - pack install-deps dynam
     - pack install summary-stat
     - tar -uvf "pack.tar" --exclude=".cache" "$PACK_DIR"
   needs:
@@ -55,4 +55,3 @@ test:
     - ./groovy_verify.sh
   needs:
     - build
-    
