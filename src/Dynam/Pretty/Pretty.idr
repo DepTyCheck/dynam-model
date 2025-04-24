@@ -1,6 +1,6 @@
 module Dynam.Pretty.Pretty
 
-import Dynam.Model.Main
+import Dynam.Model.Stmts
 import Dynam.Model.Primitives
 
 import Test.DepTyCheck.Gen
@@ -126,11 +126,7 @@ wrapMain fl True cont body = do
     b <- body
     cnt <- for cont $ assert_total $ printStmts @{JustNew nm} fl False
     let b = maybe b (b `vappend`) cnt
-    pure $ vsep $
-        [ "static void main(String[] args) {"
-        , indent' 4 b
-        , "}"
-        ]
+    pure b
 
 -------------------------------------------------------------
 

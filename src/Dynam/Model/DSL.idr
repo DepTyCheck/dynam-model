@@ -1,6 +1,6 @@
 module Dynam.Model.DSL
 
-import Dynam.Model.Main
+import Dynam.Model.Stmts
 import Dynam.Model.Primitives
 
 import Data.Nat

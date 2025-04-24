@@ -6,13 +6,11 @@ import Data.List1
 import Data.SortedMap
 import Data.String
 
-import Dynam.Run.ExprDerive
 import Dynam.Run.NameDerive
 import Dynam.Run.StmtsDerive
 import Dynam.Run.StdConfig
-import Dynam.Run.Labels
 
-import Dynam.Model.Main
+import Dynam.Model.Stmts
 import Dynam.Model.Primitives
 import Dynam.Pretty.Pretty
 import Dynam.Pretty.Utils
@@ -188,12 +186,12 @@ run : HasIO io =>
       NamedCtxt ->
       io ()
 run conf ctxt = do
-    -- let vals = genStmts conf.modelFuel ctxt.typecasts ctxt.functions ctxt.variables >>=
-    --                  printGroovy @{ctxt.fvNames} conf.ppFuel <&> render conf.layoutOpts
+    let vals = genStmts conf.modelFuel ctxt.typecasts ctxt.functions ctxt.variables >>=
+                     printGroovy @{ctxt.fvNames} conf.ppFuel <&> render conf.layoutOpts
                     
-    -- saveTestsAndCov conf (initCoverageInfo genStmts) vals
+    saveTestsAndCov conf (initCoverageInfo genStmts) vals
 
-    printLabels conf ctxt
+    -- printLabels conf ctxt
 
 
 export

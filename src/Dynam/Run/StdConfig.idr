@@ -1,6 +1,6 @@
 module Dynam.Run.StdConfig
 
-import Dynam.Model.Main
+import Dynam.Model.Stmts
 import Dynam.Model.Primitives
 
 import Dynam.Pretty.Pretty

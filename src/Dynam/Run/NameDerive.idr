@@ -1,6 +1,6 @@
 module Dynam.Run.NameDerive
 
-import public Dynam.Model.Main
+import public Dynam.Model.Stmts
 import Dynam.Pretty.Pretty
 import Dynam.Pretty.Utils
 import Dynam.Model.Primitives

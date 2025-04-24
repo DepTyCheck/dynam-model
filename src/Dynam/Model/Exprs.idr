@@ -18,19 +18,19 @@ data ExprList : ListOfSupportedCasts
 public export
 data Expr : ListOfSupportedCasts -> ListOfFunctions -> ListOfBasicTypes -> BasicType -> Type where
     -- const _
-    Literal : (x : TypeDeclaration ty) -> Expr casts funs vars ty
+    Literal : (x : TypeDeclaration ty) -> Castable casts ty resTy => Expr casts funs vars resTy
     -- var _
     Var : (n : IndexIn vars) ->
         AtIndex n ty =>
-        Expr casts funs vars ty
+        Castable casts ty resTy => 
+        Expr casts funs vars resTy
     -- function () => {}
     Invoke : (n : IndexIn funs) ->
         AtIndex n argTypes (NonVoidable to) =>
         (actualArgs : ExprList casts funs vars argTypes) ->
-        -- ArgsCastable casts retTypes argTypes => 
         Expr casts funs vars to        
 
 public export
 data ExprList : ListOfSupportedCasts -> ListOfFunctions -> ListOfBasicTypes -> ListOfBasicTypes -> Type where
     Nil  : ExprList casts vars funs []
-    (::) : Expr casts funs vars ty -> ExprList casts funs vars sx -> Castable casts ty resTy =>  ExprList casts funs vars (resTy :: sx)
+    (::) : Expr casts funs vars ty -> ExprList casts funs vars sx -> ExprList casts funs vars (ty :: sx)

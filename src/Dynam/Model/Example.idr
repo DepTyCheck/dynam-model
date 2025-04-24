@@ -1,6 +1,6 @@
 module Dynam.Model.Example
 
-import Dynam.Model.Main
+import Dynam.Model.Stmts
 import Dynam.Model.Primitives
 import Dynam.Model.DSL
 

@@ -1,10 +1,10 @@
 module Dynam.Run.StmtsDerive
 
-import public Dynam.Model.Main
+import public Dynam.Model.Stmts
 import Dynam.Model.Primitives
 
 import Deriving.DepTyCheck.Gen
-import Dynam.Run.CastGens
+-- import Dynam.Run.CastGens
 import Data.Fuel
 
 
@@ -13,4 +13,4 @@ import Data.Fuel
 %logging "deptycheck.derive" 15
 %logging "deptycheck.derive.clojuring" 20
 
-Dynam.Model.Main.genStmts' = deriveGen
+Dynam.Model.Stmts.genStmts' = deriveGen

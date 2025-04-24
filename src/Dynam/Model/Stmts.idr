@@ -1,4 +1,4 @@
-module Dynam.Model.Main
+module Dynam.Model.Stmts
 
 import public Dynam.Model.Primitives
 import public Dynam.Model.Exprs
@@ -23,7 +23,7 @@ data Stmts : (casts : ListOfSupportedCasts) ->
 
   NewV : (ty : BasicType) ->
          (initial : Expr casts funs vars ty) ->
-         (cont : Stmts casts funs ((::) ty vars)) ->
+         (cont : Stmts casts funs (ty :: vars)) ->
          Stmts casts funs vars
 
 --   NewF : (sig : Function) ->
@@ -34,12 +34,10 @@ data Stmts : (casts : ListOfSupportedCasts) ->
   ||| lhs #= rhs
   ||| @ lhs Variable that has already been defined
   ||| @ rhs Expression 
-  (#=) : {lhsTy : BasicType} ->
-         {rhsTy : BasicType} ->
+  (#=) : {ty : BasicType} ->
          (lhs : IndexIn vars) ->
-         AtIndex lhs lhsTy =>
-         (rhs : Expr casts funs vars rhsTy) ->
-         Castable casts rhsTy lhsTy =>
+         AtIndex lhs ty =>
+         (rhs : Expr casts funs vars ty) ->
          (cont : Stmts casts funs vars) ->
          Stmts casts funs vars
 
