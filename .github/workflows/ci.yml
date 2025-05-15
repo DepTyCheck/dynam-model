@@ -13,4 +13,6 @@ jobs:
 
     steps:
       - name: Launch
-        run: /home/groovy/groovy_verify.sh 4 300
+        run: |
+          cd /home/groovy
+          ./groovy_verify.sh 4 300
