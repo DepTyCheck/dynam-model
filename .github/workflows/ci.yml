@@ -15,4 +15,5 @@ jobs:
       - name: Launch
         run: |
           cd /home/groovy
-          ./groovy_verify.sh 4 300
+          ls
+          ./groovy_verify.sh 4 10
