@@ -11,4 +11,4 @@ import Deriving.DepTyCheck.Gen
 
 %logging "deptycheck.derive" 5
 
-Dynam.Pretty.Pretty.rawNewName = deriveGen
+Dynam.Pretty.Global.rawNewName = deriveGen

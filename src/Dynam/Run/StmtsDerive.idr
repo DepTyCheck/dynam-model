@@ -11,6 +11,6 @@ import Data.Fuel
 %default total
 
 %logging "deptycheck.derive" 15
-%logging "deptycheck.derive.clojuring" 20
+%logging "deptycheck.derive.closuring" 20
 
-Dynam.Model.Stmts.genStmts' = deriveGen
+Dynam.Model.Stmts.genStmts = deriveGen

@@ -4,6 +4,7 @@ import Dynam.Model.Stmts
 import Dynam.Model.Primitives
 
 import Data.Nat
+import Data.Fin
 
 
 namespace DSLUtils
@@ -31,6 +32,36 @@ namespace FunDSL
     fromInteger n with (cast {to=Nat} n)
         _ | n' = natToIndexIn (length sx `minus` S n') @{reverseLTMinus}
 
+namespace HofDSL
+    public export
+    natToFin : {dim : Nat} -> (n : Nat) -> {sx : VectOfHOF dim size} -> n `LT` size => Fin size
+    natToFin 0     {sx=x::sx}              = FZ
+    natToFin (S k) {sx=x::sx} @{LTESucc l} = FS $ natToFin {dim} {sx} k
+
+    public export
+    fromInteger : {size : Nat} ->
+                {dim : Nat} ->
+                {sx : VectOfHOF dim size} ->
+                (n : Integer) -> 
+                (cast n `LT` size) => {- (x >= the Integer 0 = True) =>-}
+                Fin size
+    fromInteger n with (cast {to=Nat} n)
+        _ | n' = natToFin {dim} {sx} (size `minus` S n') @{reverseLTMinus} 
+
+namespace HotVarDSL
+    public export
+    natToIndexIn : (n : Nat) -> {sx : ListOfHOT dim} -> n `LT` length sx => IndexIn sx
+    natToIndexIn 0     {sx=x::sx}              = Here
+    natToIndexIn (S k) {sx=x::sx} @{LTESucc l} = There $ natToIndexIn k
+
+    public export
+    fromInteger : {sx : ListOfHOT dim} ->
+                (n : Integer) -> 
+                (cast n `LT` length sx) => {- (x >= the Integer 0 = True) =>-}
+                IndexIn sx
+    fromInteger n with (cast {to=Nat} n)
+        _ | n' = natToIndexIn (length sx `minus` S n') @{reverseLTMinus}
+
 namespace VarDSL
     public export
     natToIndexIn : (n : Nat) -> {sx : ListOfBasicTypes} -> n `LT` length sx => IndexIn sx
@@ -46,6 +77,6 @@ namespace VarDSL
         _ | n' = natToIndexIn (length sx `minus` S n') @{reverseLTMinus}
 
 public export %inline
-(>>) : (Stmts c' f' v' -> Stmts c f v) -> Stmts c' f' v' -> Stmts c f v
+(>>) : (Stmts ht' hf' hv' c' f' v' -> Stmts ht hf hv c f v) -> Stmts ht' hf' hv' c' f' v' -> Stmts ht hf hv c f v
 (>>) = id
 

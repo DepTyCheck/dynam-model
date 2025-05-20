@@ -5,7 +5,29 @@ import Dynam.Model.Primitives
 import Dynam.Model.DSL
 
 import Data.Nat
+import Data.Fin
 import Data.So
+
+TyA : HighOrderType 3
+TyA = HasMethods [ True, False, True ]
+
+TyB : HighOrderType 3
+TyB = HasMethods [ False, False, True ]
+
+StdHOT : ListOfHOT 3
+StdHOT = [
+    TyA,
+    TyB
+]
+
+F1 = Signature TyA [] Boolean
+F2 = Signature TyB [] Boolean
+F3 = Signature TyA [Number] Number
+
+StdMet : VectOfHOF 3 3
+StdMet = [
+    F1, F2, F3
+]
 
 StdF : ListOfFunctions
 StdF = [    
@@ -31,14 +53,14 @@ Plus = 1
 Dum : IndexIn StdF
 Dum = 0
 
-program : Stmts StdC StdF []
+program : Stmts StdMet StdHOT [] StdC StdF []
 program = do
 {- 0 -} NewV Number $ Literal (I 10)
 {- 1 -} NewV Number $ Literal (I 11)
 {- 2 -} NewV Boolean $ Literal (B True)
         0 #= Literal (I 14)
---         0 #= Var 1
---         0 #= Var 2
+        0 #= Var 1
+        0 #= Var 2
         2 #= Invoke Plus [ Var 0, Var 2 ]
         -- NewV Void $ Invoke Dum [ Var 0, Var 1 ]
 
@@ -58,16 +80,12 @@ program = do
                 3 #= Invoke Plus [ Var 3, Literal (I 1) ]
                 Ret
             )
+
+        NewHotVar 0 -- HotVar 0
+
+        While ( InvokeHOF (FS $ FS FZ) 0 [Literal (I 7)] )
+            (do
+                Ret
+            )
+
         Ret
-
--- export
--- main : IO ()
--- main = do
---     -- let seed <- conf.usedSeed
---     -- let vals = unGenTryN conf.testsCnt seed $
---     --             genStmts conf.modelFuel ctxt.typecasts ctxt.functions ctxt.variables Void >>=
---     --                 printGroovy @{ctxt.fvNames} conf.ppFuel
---     putStr $ render
-
-
-

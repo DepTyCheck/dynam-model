@@ -70,7 +70,7 @@ isFunInfix (NewFun @{ss} s)     (There i) = isFunInfix ss i
 isFunInfix (NewVar @{ss} s)     i         = isFunInfix ss i
 
 public export
-getExprs : ExprList casts funs vars argTys -> List $ Exists $ Expr casts funs vars
+getExprs : ExprList hofs hots hotvars casts funs vars argTys -> List $ Exists $ Expr hofs hots hotvars casts funs vars
 getExprs [] = []
 getExprs (x :: xs) = Evidence _ x :: getExprs xs
 

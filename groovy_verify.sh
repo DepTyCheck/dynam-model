@@ -3,8 +3,8 @@ FUEL=${1:-4}
 SIZE=${2:-100}
 
 # clean
-rm *.info
-rm *.class
+rm -f *.info
+rm -f *.class
 
 # gen code samples
 ./build/exec/dynam -n $SIZE --model-fuel=$FUEL groovy

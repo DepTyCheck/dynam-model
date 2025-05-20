@@ -46,6 +46,7 @@ record Config where
   testsCnt   : Nat
   modelFuel  : Fuel
   ppFuel     : Fuel
+  showProc   : Bool
 
 defaultConfig : Config
 defaultConfig = MkConfig
@@ -54,6 +55,7 @@ defaultConfig = MkConfig
   , testsCnt   = 10
   , modelFuel  = limit 8
   , ppFuel     = limit 1000000
+  , showProc   = False
   }
 
 parseSeed : String -> Either String $ Config -> Config
@@ -88,6 +90,16 @@ parsePPFuel str = case parsePositive str of
   Just n  => Right {ppFuel := limit n}
   Nothing => Left "can't parse given pretty-printer fuel"
 
+parseShowProc : Config -> Config
+parseShowProc cfg = MkConfig
+  { usedSeed = cfg.usedSeed
+  , layoutOpts = cfg.layoutOpts
+  , testsCnt   = cfg.testsCnt
+  , modelFuel  = cfg.modelFuel
+  , ppFuel     = cfg.ppFuel
+  , showProc   = True
+  }
+
 cliOpts : List $ OptDescr $ Config -> Config
 cliOpts =
  [ MkOpt [] ["seed"]
@@ -99,12 +111,15 @@ cliOpts =
  , MkOpt ['n'] ["tests-count"]
      (ReqArg' parseTestsCount "<tests-count>")
      "Sets the count of tests to generate."
- , MkOpt [] ["model-fuel"]
+ , MkOpt ['f'] ["model-fuel"]
      (ReqArg' parseModelFuel "<fuel>")
     "Sets how much fuel there is for generation of the model."
  , MkOpt [] ["pp-fuel"]
      (ReqArg' parsePPFuel "<fuel>")
      "Sets how much fuel there is for pretty-printing."
+ , MkOpt ['p'] ["process"]
+     (NoArg parseShowProc)
+     "Show generation process."
  ]
 
 ---------------
@@ -115,10 +130,10 @@ data SupportedLanguage = Groovy
 
 public export
 0 PP : SupportedLanguage -> Type
-PP language = {casts : _} -> {funs : _} -> {vars : _} -> {opts : _} ->
+PP language = {dm : Nat} -> {hofs: VectOfHOF dm dm} -> {hots : ListOfHOT dm} -> {hotvars: ListOfHOT dm} -> {casts : _} -> {funs : _} -> {vars : _} -> {opts : _} ->
               (names : UniqNames funs vars) =>
               Fuel ->
-              Stmts casts funs vars -> Gen0 $ Doc opts
+              Stmts hofs hots hotvars casts funs vars -> Gen0 $ Doc opts
 
 supportedLanguages : SortedMap String (l : SupportedLanguage ** (NamedCtxt, PP l))
 supportedLanguages = fromList
@@ -134,7 +149,7 @@ printLabels cfg ctx = do
     let testFile = \ind : Nat => "tests\{show ind}.info"
     let cnt = cfg.testsCnt
     randGen <- liftIO cfg.usedSeed
-    let vals = genStmts cfg.modelFuel ctx.typecasts ctx.functions ctx.variables
+    let vals = genStmts cfg.modelFuel [] [] [] ctx.typecasts ctx.functions ctx.variables
 
     evalRandomT randGen $ Data.List.Lazy.for_ (fromList [1..cnt]) $ \ind => do
       res <- runMaybeT $ unGen {m=MaybeT (RandomT io)} {labels=PrintAllLabels} vals
@@ -172,7 +187,7 @@ saveTestsAndCov conf cgi gen = do
         let cgi = registerCoverage mcov cgi 
         writeFile covFile (show @{Colourful} cgi) >>= either (throwError . show) pure
     
-        putStrLn "Run #\{show ind}"
+        putStrLn "Done #\{show ind}"
 
         pure cgi
 
@@ -186,12 +201,13 @@ run : HasIO io =>
       NamedCtxt ->
       io ()
 run conf ctxt = do
-    let vals = genStmts conf.modelFuel ctxt.typecasts ctxt.functions ctxt.variables >>=
-                     printGroovy @{ctxt.fvNames} conf.ppFuel <&> render conf.layoutOpts
-                    
-    saveTestsAndCov conf (initCoverageInfo genStmts) vals
-
-    -- printLabels conf ctxt
+    case conf.showProc of
+        True => printLabels conf ctxt
+        False => do
+            let vals = genStmts conf.modelFuel [] [] [] ctxt.typecasts ctxt.functions ctxt.variables >>=
+                            printGroovy @{ctxt.fvNames} conf.ppFuel <&> render conf.layoutOpts
+                            
+            saveTestsAndCov conf (initCoverageInfo genStmts) vals
 
 
 export
