@@ -8,7 +8,7 @@ import Data.Fin
 
 -- casts -> funs -> 
 public export
-data ExprList : (hod : HOData) ->
+data ExprList : (hod : HOData dim) ->
                 (casts : ListOfSupportedCasts) ->
                 (funs  : ListOfFunctions)  ->
                 (vars  : ListOfBasicTypes) ->
@@ -18,7 +18,7 @@ data ExprList : (hod : HOData) ->
 -- available casts -> functions' scope -> variables' scope -> type
 -- Must be non-Void
 public export
-data Expr : (hod : HOData) ->
+data Expr : (hod : HOData dim) ->
             (casts : ListOfSupportedCasts) ->
             (funs  : ListOfFunctions)  ->
             (vars  : ListOfBasicTypes) ->
@@ -51,7 +51,7 @@ data Expr : (hod : HOData) ->
     --     Expr hofs hots hotvars casts funs vars retTy
 
 public export
-data ExprList : (hod : HOData) ->
+data ExprList : (hod : HOData dim) ->
                 (casts : ListOfSupportedCasts) ->
                 (funs  : ListOfFunctions)  ->
                 (vars  : ListOfBasicTypes) ->

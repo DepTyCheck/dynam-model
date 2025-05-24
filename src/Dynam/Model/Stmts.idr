@@ -17,7 +17,7 @@ import public Decidable.Decidable
 export infix 2 #=
 
 public export
-data Stmts : (hod : HOData) ->
+data Stmts : (hod : HOData dim) ->
              (casts : ListOfSupportedCasts) ->
              (funs  : ListOfFunctions)  ->
              (vars  : ListOfBasicTypes) -> Type where
@@ -67,7 +67,8 @@ data Stmts : (hod : HOData) ->
 
 export
 genStmts : Fuel ->
-           (hd : HOData) ->
+           {dim : Nat} ->
+           (hd : HOData dim) ->
            (csts : ListOfSupportedCasts) ->
            (funcs : ListOfFunctions) ->
            (varrs : ListOfBasicTypes) ->

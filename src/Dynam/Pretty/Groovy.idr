@@ -2,7 +2,7 @@ module Dynam.Pretty.Groovy
 
 import Dynam.Pretty.Global
 
-printExpr : {hod : HOData} ->
+printExpr : {hod : HOData dim} ->
             {funs : ListOfFunctions} ->
             {vars : ListOfBasicTypes} ->
             {opts: LayoutOpts} ->
@@ -11,7 +11,7 @@ printExpr : {hod : HOData} ->
             Expr hod casts funs vars ty ->
             Gen0 $ Doc opts
 
-printFunCall : {hod : HOData} ->
+printFunCall : {hod : HOData dim} ->
                {funs : ListOfFunctions} ->
                {vars : ListOfBasicTypes} ->
                {opts : LayoutOpts} ->
@@ -46,7 +46,7 @@ printExpr p $ Var var          = pure $ line $ varName names var
 -- printExpr p $ Invoke name args = assert_total printFunCall p name args
 
 
-printStmts : {hod : HOData} ->
+printStmts : {hod : HOData dim} ->
              {funs : ListOfFunctions} ->
              {vars : ListOfBasicTypes} ->
              {opts : LayoutOpts} ->
@@ -60,7 +60,7 @@ printStmts : {hod : HOData} ->
 --------------------------------------------------------------------------------
 -- Main
 
-wrapMain : {hod : HOData} ->
+wrapMain : {hod : HOData dim} ->
            {funs : ListOfFunctions} ->
            {vars : ListOfBasicTypes} ->
            {opts : LayoutOpts} ->
@@ -126,7 +126,7 @@ printStmts fl tl $ While cond body cont = wrapMain fl tl (Just cont) $ do
 
 
 export
-printGroovy : {hod : HOData} ->
+printGroovy : {hod : HOData dim} ->
               {funs : ListOfFunctions} ->
               {vars : ListOfBasicTypes} ->
               {opts : LayoutOpts} ->

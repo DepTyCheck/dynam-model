@@ -130,7 +130,7 @@ data SupportedLanguage = Groovy
 
 public export
 0 PP : SupportedLanguage -> Type
-PP language = {hod : HOData} -> {casts : _} -> {funs : _} -> {vars : _} -> {opts : _} ->
+PP language = {hod : HOData 0} -> {casts : _} -> {funs : _} -> {vars : _} -> {opts : _} ->
               (names : UniqNames funs vars) =>
               Fuel ->
               Stmts hod casts funs vars -> Gen0 $ Doc opts
@@ -149,7 +149,7 @@ printLabels cfg ctx = do
     let testFile = \ind : Nat => "tests\{show ind}.info"
     let cnt = cfg.testsCnt
     randGen <- liftIO cfg.usedSeed
-    let vals = genStmts cfg.modelFuel (MkHOD 0 [] [] []) ctx.typecasts ctx.functions ctx.variables
+    let vals = genStmts cfg.modelFuel (MkHOD [] [] []) ctx.typecasts ctx.functions ctx.variables
 
     evalRandomT randGen $ Data.List.Lazy.for_ (fromList [1..cnt]) $ \ind => do
         res <- runMaybeT $ unGen {m=MaybeT (RandomT io)} {labels=PrintAllLabels} vals
@@ -204,7 +204,7 @@ run conf ctxt = do
     case conf.showProc of
         True => printLabels conf ctxt
         False => do
-            let vals = genStmts conf.modelFuel (MkHOD 0 [] [] []) ctxt.typecasts ctxt.functions ctxt.variables >>=
+            let vals = genStmts conf.modelFuel (MkHOD [] [] []) ctxt.typecasts ctxt.functions ctxt.variables >>=
                             printGroovy @{ctxt.fvNames} conf.ppFuel <&> render conf.layoutOpts
                             
             -- saveTestsAndCov conf (initCoverageInfo genStmts) vals

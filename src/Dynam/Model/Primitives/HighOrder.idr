@@ -9,9 +9,8 @@ import Dynam.Model.Primitives
 import Data.Fin
 
 public export
-record HOData where
+record HOData (dim : Nat) where
     constructor MkHOD
-    dim  : Nat
     hofs : VectOfHOF dim dim
     hots : ListOfHOT dim
     objs : ListOfHOT dim
