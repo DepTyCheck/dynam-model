@@ -27,6 +27,11 @@ public export
 Biinjective Dynam.Model.Primitives.Types.(::) where
     biinjective Refl = (Refl, Refl)
 
+-- public export
+-- data IndexIn : (list : ListOfBasicTypes) -> (ty : BasicType) -> Type where
+--     Here  : IndexIn (ty :: xs) ty
+--     There : IndexIn xs ty -> IndexIn (_ :: xs) ty
+
 public export
 data IndexIn : ListOfBasicTypes -> Type where
     Here  : IndexIn $ x :: sx
@@ -35,10 +40,10 @@ data IndexIn : ListOfBasicTypes -> Type where
 ||| @ idx Index in ListOfBasicTypes
 ||| @ ty Return type
 public export
-data AtIndex : {sx : ListOfBasicTypes} -> (idx : IndexIn sx) -> (ty : BasicType) -> Type where
-    [search sx idx]
-    Here'  : AtIndex {sx = ty :: sx} Here ty
-    There' : AtIndex {sx} i ty -> AtIndex {sx = x :: sx} (There i) ty
+data AtIndex : {xs : ListOfBasicTypes} -> (idx : IndexIn xs) -> (val : BasicType) -> Type where
+    [search xs idx]
+    Here'  : AtIndex {xs = val :: _} Here val
+    There' : AtIndex {xs} i val -> AtIndex {xs = _ :: xs} (There i) val
 
 public export
 data Contains : ListOfBasicTypes -> BasicType -> Type where

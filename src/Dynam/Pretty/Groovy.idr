@@ -2,27 +2,23 @@ module Dynam.Pretty.Groovy
 
 import Dynam.Pretty.Global
 
-printExpr : {hofs : _} ->
-            {hots : _} ->
-            {hotvars : _} ->
-            {funs : _} ->
-            {vars : _} ->
-            {opts: _} ->
+printExpr : {hod : HOData} ->
+            {funs : ListOfFunctions} ->
+            {vars : ListOfBasicTypes} ->
+            {opts: LayoutOpts} ->
             (names : UniqNames funs vars) =>
             Prec ->
-            Expr hofs hots hotvars casts funs vars ty ->
+            Expr hod casts funs vars ty ->
             Gen0 $ Doc opts
 
-printFunCall : {hofs : _} ->
-               {hots : _} ->
-               {hotvars : _} ->
-               {funs : _} ->
-               {vars : _} ->
-               {opts : _ } ->
+printFunCall : {hod : HOData} ->
+               {funs : ListOfFunctions} ->
+               {vars : ListOfBasicTypes} ->
+               {opts : LayoutOpts} ->
                (names : UniqNames funs vars) =>
                Prec ->
-               IndexIn funs ->
-               ExprList hofs hots hotvars casts funs vars argTys ->
+               IndexIn funs args ty ->
+               ExprList hod casts funs vars argTys ->
                Gen0 $ Doc opts
 printFunCall p name args = do
   let fn = funName names name
@@ -47,37 +43,33 @@ printExpr p $ Literal $ I num    = pure $ line $ show num
 
 printExpr p $ Var var          = pure $ line $ varName names var
 
-printExpr p $ Invoke name args = assert_total printFunCall p name args
+-- printExpr p $ Invoke name args = assert_total printFunCall p name args
 
 
-printStmts : {hofs : _} ->
-             {hots : _} ->
-             {hotvars : _} ->
-             {funs : _} ->
-             {vars : _} ->
-             {opts : _} ->
+printStmts : {hod : HOData} ->
+             {funs : ListOfFunctions} ->
+             {vars : ListOfBasicTypes} ->
+             {opts : LayoutOpts} ->
              (names : UniqNames funs vars) =>
              (newNames : Gen0 String) =>
              Fuel ->
              (toplevel : Bool) ->
-             Stmts hofs hots hotvars casts funs vars -> Gen0 $ Doc opts
+             Stmts hod casts funs vars -> Gen0 $ Doc opts
 
 
 --------------------------------------------------------------------------------
 -- Main
 
-wrapMain : {hofs : _} ->
-           {hots : _} ->
-           {hotvars : _} ->
-           {funs : _} ->
-           {vars : _} ->
-           {opts : _} ->
+wrapMain : {hod : HOData} ->
+           {funs : ListOfFunctions} ->
+           {vars : ListOfBasicTypes} ->
+           {opts : LayoutOpts} ->
            (names : UniqNames funs vars) =>
            (newNames : Gen0 String) =>
           --  (0 _ : IfUnsolved retTy Nothing) =>
            Fuel ->
            (indeed : Bool) ->
-           (cont : Maybe $ Stmts hofs hots hotvars casts funs vars) ->
+           (cont : Maybe $ Stmts hod casts funs vars) ->
            Gen0 (Doc opts) -> Gen0 (Doc opts)
 wrapMain fl False Nothing x = x
 wrapMain fl False (Just cont) x = [| x `vappend` assert_total printStmts fl False cont |]
@@ -99,26 +91,26 @@ printStmts fl tl $ NewV ty initial cont = do
     rhs <- printExpr Open initial
     pure $ flip vappend rest $ hangSep' 2 lhs rhs
 
-printStmts fl tl $ Ret = wrapMain {hofs} {hots} {hotvars} {casts} {funs} {vars} fl tl Nothing $ pure empty
+printStmts fl tl $ Ret = wrapMain {hod} {casts} {funs} {vars} fl tl Nothing $ pure empty
 
 
 printStmts fl tl $ (#=) n v cont = wrapMain fl tl (Just cont) $ do
     pure $ line (varName names n) <++> "=" <++> !(printExpr Open v)
 
-printStmts fl tl $ If cond th el cont = wrapMain fl tl (Just cont) $ do
-    -- thenBody  <- printStmts fl tl th
-    -- elseBody  <- printStmts fl tl el
-    -- condition <- printExpr Open cond
-    let pre  = "if (" 
-    let post = ") {"
-    let header = pre <+> !(printExpr Open cond) <++> post
-    pure $ vsep $
-        [ header
-        , indent' 4 !(printStmts fl False th)
-        , "} else {"
-        , indent' 4 !(printStmts fl False el)
-        , "}"
-        ]
+-- printStmts fl tl $ If cond th el cont = wrapMain fl tl (Just cont) $ do
+--     -- thenBody  <- printStmts fl tl th
+--     -- elseBody  <- printStmts fl tl el
+--     -- condition <- printExpr Open cond
+--     let pre  = "if (" 
+--     let post = ") {"
+--     let header = pre <+> !(printExpr Open cond) <++> post
+--     pure $ vsep $
+--         [ header
+--         , indent' 4 !(printStmts fl False th)
+--         , "} else {"
+--         , indent' 4 !(printStmts fl False el)
+--         , "}"
+--         ]
 
 printStmts fl tl $ While cond body cont = wrapMain fl tl (Just cont) $ do
     let pref = "while ("
@@ -130,17 +122,15 @@ printStmts fl tl $ While cond body cont = wrapMain fl tl (Just cont) $ do
         , "}"
         ]
 
-printStmts fl tl $ Call name args cont = wrapMain fl tl (Just cont) $ printFunCall Open name args
+-- printStmts fl tl $ Call name args cont = wrapMain fl tl (Just cont) $ printFunCall Open name args
 
 
 export
-printGroovy : {hofs : _} ->
-              {hots : _} ->
-              {hotvars : _} ->
-              {funs : _} ->
-              {vars : _} ->
-              {opts : _} ->
+printGroovy : {hod : HOData} ->
+              {funs : ListOfFunctions} ->
+              {vars : ListOfBasicTypes} ->
+              {opts : LayoutOpts} ->
               (names : UniqNames funs vars) =>
               Fuel ->
-              Stmts hofs hots hotvars casts funs vars -> Gen0 $ Doc opts
+              Stmts hod casts funs vars -> Gen0 $ Doc opts
 printGroovy fl = printStmts {names} {newNames = namesGen} fl True

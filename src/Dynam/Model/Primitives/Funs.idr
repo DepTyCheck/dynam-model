@@ -25,18 +25,18 @@ data ListOfFunctions : Type where
     (::) : Function -> ListOfFunctions -> ListOfFunctions
 
 public export
-data IndexIn : ListOfFunctions -> Type where
-    Here  : IndexIn $ x :: sx
-    There : IndexIn sx -> IndexIn $ x :: sx
+data IndexIn : (list : ListOfFunctions) -> (args : ListOfBasicTypes) -> (resTy : MaybeVoidableType) -> Type where
+    Here  : IndexIn ((args ==> resTy) :: _) args resTy
+    There : IndexIn xs args resTy -> IndexIn (_ :: xs) args resTy
 
-public export
-data AtIndex : {sx : ListOfFunctions}    ->
-               (idx : IndexIn sx)        ->
-               (from : ListOfBasicTypes) -> 
-               (to : MaybeVoidableType) -> Type where
-    [search sx idx]
-    Here'  : {voidable : Bool} -> {to : MaybeVoidableType} -> AtIndex {sx = (from ==> to) :: sx} Here from to
-    There' : AtIndex {sx} i from to -> AtIndex {sx = x :: sx} (There i) from to
+-- public export
+-- data AtIndex : {sx : ListOfFunctions}    ->
+--                (idx : IndexIn sx)        ->
+--                (from : ListOfBasicTypes) -> 
+--                (to : MaybeVoidableType) -> Type where
+--     [search sx idx]
+--     Here'  : {voidable : Bool} -> {to : MaybeVoidableType} -> AtIndex {sx = (from ==> to) :: sx} Here from to
+--     There' : AtIndex {sx} i from to -> AtIndex {sx = x :: sx} (There i) from to
 
 -- public export
 -- data Contains : ListOfFunctions -> Function -> Type where

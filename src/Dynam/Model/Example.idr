@@ -55,10 +55,10 @@ Dum = 0
 
 program : Stmts StdMet StdHOT [] StdC StdF []
 program = do
-{- 0 -} NewV Number $ Literal (I 10)
-{- 1 -} NewV Number $ Literal (I 11)
-{- 2 -} NewV Boolean $ Literal (B True)
-        0 #= Literal (I 14)
+{- 0 -} NewV $ Literal (I 10)
+{- 1 -} NewV $ Literal (I 11)
+{- 2 -} NewV $ Literal (B True)
+        There Here #= Literal (I 14)
         0 #= Var 1
         0 #= Var 2
         2 #= Invoke Plus [ Var 0, Var 2 ]
@@ -74,18 +74,18 @@ program = do
                 Ret)
         2 #= Var 1
 
-{- 3 -} NewV Number $ Literal (I 10)
+{- 3 -} NewV $ Literal (I 10)
         While ( Invoke Pred [Var 3] )
             (do
                 3 #= Invoke Plus [ Var 3, Literal (I 1) ]
                 Ret
             )
 
-        NewHotVar 0 -- HotVar 0
+        -- NewHotVar 0 -- HotVar 0
 
-        While ( InvokeHOF (FS $ FS FZ) 0 [Literal (I 7)] )
-            (do
-                Ret
-            )
+        -- While ( InvokeHOF (FS $ FS FZ) 0 [Literal (I 7)] )
+        --     (do
+        --         Ret
+        --     )
 
         Ret

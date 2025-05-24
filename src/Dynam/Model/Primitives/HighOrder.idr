@@ -8,6 +8,14 @@ import Dynam.Model.Primitives
 
 import Data.Fin
 
+public export
+record HOData where
+    constructor MkHOD
+    dim  : Nat
+    hofs : VectOfHOF dim dim
+    hots : ListOfHOT dim
+    objs : ListOfHOT dim
+
 -- export
 -- DecEq HighOrderFunction where
 --     decEq (f ==> ty1) (f' ==> ty2) = decEqCong2 (decEq f f') (decEq ty1 ty2)

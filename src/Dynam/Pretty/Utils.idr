@@ -56,21 +56,21 @@ varName (NewVar @{ss} _)  (There i) = varName ss i
 varName (NewVar s)        Here      = s
 
 public export
-funName : UniqNames funs vars -> IndexIn funs -> String
+funName : UniqNames funs vars -> IndexIn funs args ty -> String
 funName (JustNew @{ss} _) i         = funName ss i
 funName (NewFun s)        Here      = s
 funName (NewFun @{ss} _)  (There i) = funName ss i
 funName (NewVar @{ss} _)  i         = funName ss i
 
 public export
-isFunInfix : UniqNames funs vars -> IndexIn funs -> Bool
+isFunInfix : UniqNames funs vars -> IndexIn funs args ty -> Bool
 isFunInfix (JustNew @{ss} _)    i         = isFunInfix ss i
 isFunInfix (NewFun {isInfix} _) Here      = isInfix
 isFunInfix (NewFun @{ss} s)     (There i) = isFunInfix ss i
 isFunInfix (NewVar @{ss} s)     i         = isFunInfix ss i
 
 public export
-getExprs : ExprList hofs hots hotvars casts funs vars argTys -> List $ Exists $ Expr hofs hots hotvars casts funs vars
+getExprs : ExprList hod casts funs vars argTys -> List $ Exists $ Expr hod casts funs vars
 getExprs [] = []
 getExprs (x :: xs) = Evidence _ x :: getExprs xs
 
