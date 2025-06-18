@@ -18,11 +18,8 @@ version = 0.1.0
 depends = deptycheck, prettier, getopts, weaker-traversals
 
 -- modules to install
-modules = Dynam.Model.Stmts
-        , Dynam.Model.Primitives
-        , Dynam.Model.Primitives.Casts
-        , Dynam.Model.Primitives.Types
-        , Dynam.Pretty.Pretty
+modules = Dynam.Model.Base
+        , Dynam.Pretty.Base
         , Dynam.Run.Runner
 
 -- main file (i.e. file to load at REPL)

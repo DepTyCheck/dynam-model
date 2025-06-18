@@ -1,155 +1,63 @@
 module Dynam.Run.Runner
 
-import Data.Fuel
-import Data.List.Lazy
-import Data.List1
-import Data.SortedMap
-import Data.String
-
-import Dynam.Run.NameDerive
-import Dynam.Run.StmtsDerive
-import Dynam.Run.StdConfig
-
-import Dynam.Model.Stmts
-import Dynam.Model.Primitives
-import Dynam.Pretty.Pretty
-import Dynam.Pretty.Utils
+import Dynam.Run.All
 
 import Test.DepTyCheck.Gen
 import Test.DepTyCheck.Gen.Coverage
--- import Test.DepTyCheck.Gen.Labels
-import Text.PrettyPrint.Bernardy
+
+import Data.List.Lazy
 import Data.Functor.TraverseSt
 
 import System
 import System.File
 import System.Clock
 import System.GetOpts
-import System.Random.Pure.StdGen
 
+import Control.Monad.Maybe
 import Control.Monad.Either
 import Control.Monad.Random
-import Control.Monad.Maybe
 
 %default total
-
 %hide Text.PrettyPrint.Bernardy.Core.Doc.(>>=)
 
--------------------
---- CLI options ---
--------------------
-
-record Config where
-  constructor MkConfig
-  usedSeed : IO StdGen
-  layoutOpts : LayoutOpts
-  testsCnt   : Nat
-  modelFuel  : Fuel
-  ppFuel     : Fuel
-  showProc   : Bool
-
-defaultConfig : Config
-defaultConfig = MkConfig
-  { usedSeed = initSeed
-  , layoutOpts = Opts 152
-  , testsCnt   = 10
-  , modelFuel  = limit 8
-  , ppFuel     = limit 1000000
-  , showProc   = False
-  }
-
-parseSeed : String -> Either String $ Config -> Config
-parseSeed str = do
-  let n1:::n2::[] = trim <$> split (== ',') str
-    | _ => Left "we expect two numbers divided by a comma"
-  let Just n1 = parsePositive n1
-    | Nothing => Left "expected a positive number at the first component, given `\{n1}`"
-  let Just n2 = parsePositive {a=Bits64} n2
-    | Nothing => Left "expected a positive number at the second component, given `\{n2}`"
-  let Yes prf = decSo $ testBit n2 0
-    | No _ => Left "second component must be odd"
-  Right {usedSeed := pure $ rawStdGen n1 n2}
-
-parsePPWidth : String -> Either String $ Config -> Config
-parsePPWidth str = case parsePositive str of
-  Just n  => Right {layoutOpts := Opts n}
-  Nothing => Left "can't parse max width for the pretty-printer"
-
-parseTestsCount : String -> Either String $ Config -> Config
-parseTestsCount str = case parsePositive str of
-  Just n  => Right {testsCnt := n}
-  Nothing => Left "can't parse given count of tests"
-
-parseModelFuel : String -> Either String $ Config -> Config
-parseModelFuel str = case parsePositive str of
-  Just n  => Right {modelFuel := limit n}
-  Nothing => Left "can't parse given model fuel"
-
-parsePPFuel : String -> Either String $ Config -> Config
-parsePPFuel str = case parsePositive str of
-  Just n  => Right {ppFuel := limit n}
-  Nothing => Left "can't parse given pretty-printer fuel"
-
-parseShowProc : Config -> Config
-parseShowProc cfg = MkConfig
-  { usedSeed = cfg.usedSeed
-  , layoutOpts = cfg.layoutOpts
-  , testsCnt   = cfg.testsCnt
-  , modelFuel  = cfg.modelFuel
-  , ppFuel     = cfg.ppFuel
-  , showProc   = True
-  }
 
 cliOpts : List $ OptDescr $ Config -> Config
-cliOpts =
- [ MkOpt [] ["seed"]
-     (ReqArg' parseSeed "<seed>,<gamma>")
-     "Sets particular random seed to start with."
- , MkOpt ['w'] ["pp-width"]
-     (ReqArg' parsePPWidth "<nat>")
-     "Sets the max length for the pretty-printer."
- , MkOpt ['n'] ["tests-count"]
-     (ReqArg' parseTestsCount "<tests-count>")
-     "Sets the count of tests to generate."
- , MkOpt ['f'] ["model-fuel"]
-     (ReqArg' parseModelFuel "<fuel>")
-    "Sets how much fuel there is for generation of the model."
- , MkOpt [] ["pp-fuel"]
-     (ReqArg' parsePPFuel "<fuel>")
-     "Sets how much fuel there is for pretty-printing."
- , MkOpt ['p'] ["process"]
-     (NoArg parseShowProc)
-     "Show generation process."
- ]
+cliOpts = [
+      MkOpt [] ["seed"]
+        (ReqArg' parseSeed "<seed>,<gamma>")
+        "Sets particular random seed to start with."
+    , MkOpt ['w'] ["pp-width"]
+        (ReqArg' parsePPWidth "<nat>")
+        "Sets the max length for the pretty-printer."
+    , MkOpt ['n'] ["tests-count"]
+        (ReqArg' parseTestsCount "<tests-count>")
+        "Sets the count of tests to generate."
+    , MkOpt ['f'] ["model-fuel"]
+        (ReqArg' parseModelFuel "<fuel>")
+        "Sets how much fuel there is for generation of the model."
+    , MkOpt [] ["pp-fuel"]
+        (ReqArg' parsePPFuel "<fuel>")
+        "Sets how much fuel there is for pretty-printing."
+    , MkOpt ['p'] ["process"]
+        (NoArg parseShowProc)
+        "Shows generation process."
+    , MkOpt ['m'] ["multi"]
+        (NoArg parseMulti)
+        "Generate all languages at once."
+]
 
----------------
---- Startup ---
----------------
-public export
-data SupportedLanguage = Groovy
 
-public export
-0 PP : SupportedLanguage -> Type
-PP language = {hod : HOData 0} -> {casts : _} -> {funs : _} -> {vars : _} -> {opts : _} ->
-              (names : UniqNames funs vars) =>
-              Fuel ->
-              Stmts hod casts funs vars -> Gen0 $ Doc opts
+forSeed : Monad f => (seed : s) -> LazyList a -> (s -> a -> f s) -> f ()
+forSeed seed []      g = pure ()
+forSeed seed (x::xs) g = forSeed !(g seed x) xs g
 
-supportedLanguages : SortedMap String (l : SupportedLanguage ** (NamedCtxt, PP l))
-supportedLanguages = fromList
-  [ ("groovy", (Groovy ** (stdLib, printGroovy)))
-  ]
 
-forS_ : Monad f => (seed : s) -> LazyList a -> (s -> a -> f s) -> f ()
-forS_ seed []      g = pure ()
-forS_ seed (x::xs) g = forS_ !(g seed x) xs g
-
-printLabels : HasIO io => Config -> NamedCtxt -> io ()
-printLabels cfg ctx = do
+printLabels : HasIO io => (pp : PP) -> Config -> NamedCtxt -> io ()
+printLabels pp cfg ctx = do
     let testFile = \ind : Nat => "tests\{show ind}.info"
     let cnt = cfg.testsCnt
     randGen <- liftIO cfg.usedSeed
-    let vals = genStmts cfg.modelFuel (MkHOD [] [] []) ctx.typecasts ctx.functions ctx.variables
+    let vals = genStmts cfg.modelFuel ctx.typecasts ctx.functions ctx.variables
 
     evalRandomT randGen $ Data.List.Lazy.for_ (fromList [1..cnt]) $ \ind => do
         res <- runMaybeT $ unGen {m=MaybeT (RandomT io)} {labels=PrintAllLabels} vals
@@ -159,7 +67,7 @@ printLabels cfg ctx = do
         case res of
             Just code => do
                 putStrLn "Pretty printer is running.."
-                let codeGen = printGroovy @{ctx.fvNames} cfg.ppFuel code <&> render cfg.layoutOpts
+                let codeGen = pp @{ctx.fvNames} cfg.ppFuel code <&> render cfg.layoutOpts
                 str <- runMaybeT $ unGen {m=MaybeT (RandomT io)} {labels=PrintAllLabels} codeGen
 
                 case str of
@@ -181,7 +89,7 @@ saveTestsAndCov conf cgi gen = do
     let testFile = \ind : Nat => "tests\{show ind}.info"
     let cnt = conf.testsCnt
 
-    forS_ cgi (withIndex $ unGenTryND cnt randGen gen) $ \cgi, (ind, mcov, test) => do
+    forSeed cgi (withIndex $ unGenTryND cnt randGen gen) $ \cgi, (ind, mcov, test) => do
         writeFile (testFile ind) test >>= either (throwError . show) pure
 
         let cgi = registerCoverage mcov cgi 
@@ -191,42 +99,81 @@ saveTestsAndCov conf cgi gen = do
 
         pure cgi
 
+saveMultiCode : HasIO io => MonadError String io => Config -> 
+                ((casts : _) -> (funs : _) -> (vars : _) -> Gen MaybeEmpty (Stmts casts funs vars)) -> io Unit
+saveMultiCode cfg gen = do
+    let testFile = \lang : String => "multi." ++ lang
+    randGen <- liftIO cfg.usedSeed
+    
+    evalRandomT randGen $ do
+        let ctx = shared
+        test <- runMaybeT $ unGen {m=MaybeT (RandomT io)} {labels=PrintAllLabels} $ gen ctx.typecasts ctx.functions ctx.variables
+    
+        putStrLn "Model is built"
+        putStrLn "************************"
+
+
+        Data.List.Lazy.for_ (fromList $ kvList supportedLanguagesShared) $ \(lang, _, pp) => do
+            putStrLn "Printing multi.\{ lang }"
+
+            case test of
+                Just code => do
+                    putStrLn "Pretty printer is running.."
+                    let codeGen = pp @{ctx.fvNames} cfg.ppFuel code <&> render cfg.layoutOpts
+                    str <- runMaybeT $ unGen {m=MaybeT (RandomT io)} codeGen
+
+                    case str of
+                        Just nonEmpty => do
+                            putStrLn "Success"
+                            putStrLn "************************"
+                            writeFile (testFile lang) nonEmpty >>= either (throwError . show) pure
+                        Nothing => putStrLn "Fail"
+
+                Nothing => putStrLn "empty model"
+
+            putStrLn "---"
 
 ---------------
 --- Running ---
 ---------------
 run : HasIO io =>
       MonadError String io =>
+      (pp : PP) ->
       Config ->
       NamedCtxt ->
       io ()
-run conf ctxt = do
-    case conf.showProc of
-        True => printLabels conf ctxt
-        False => do
-            let vals = genStmts conf.modelFuel (MkHOD [] [] []) ctxt.typecasts ctxt.functions ctxt.variables >>=
-                            printGroovy @{ctxt.fvNames} conf.ppFuel <&> render conf.layoutOpts
+run pp conf ctxt = do
+    case (conf.multi, conf.showProc) of
+        (True, _) => do
+            putStrLn "Got M"
+            saveMultiCode conf (genStmts conf.modelFuel)
+
+        (_, True) => printLabels pp conf ctxt
+        (_, False) => do
+            let vals = genStmts conf.modelFuel ctxt.typecasts ctxt.functions ctxt.variables >>=
+                            pp @{ctxt.fvNames} conf.ppFuel <&> render conf.layoutOpts
                             
-            -- saveTestsAndCov conf (initCoverageInfo genStmts) vals
-            putStrLn "DONE"
+            saveTestsAndCov conf (initCoverageInfo Dynam.Model.Base.Stmts.genStmts) vals
 
 
 export
 main : IO ()
 main = do
-  args <- getArgs
-  let usage : Lazy String := usageInfo "Usage: \{fromMaybe "pil-fun" $ head' args} [options] <language>" cliOpts
-  let MkResult options nonOptions [] [] = getOpt Permute cliOpts $ drop 1 args
-    | MkResult {unrecognized=unrecOpts@(_::_), _} => if "help" `elem` unrecOpts
-                                                      then putStrLn usage
-                                                      else die "unrecodnised options \{show unrecOpts}\n\{usage}"
-    | MkResult {errors=es@(_::_), _}              => die "arguments parse errors \{show es}\n\{usage}"
-  let [lang] = nonOptions
-    | []   => die "no language is given, supported languages: groovy\n\{usage}"
-    | many => die "too many languages are given\n\{usage}"
-  let Just (_ ** (ctxt, pp)) = lookup lang supportedLanguages
-    | Nothing => die "unknown language \{lang}, supported languages groovy\n\{usage}"
+    args <- getArgs
+    let usage : Lazy String := usageInfo "Usage: \{fromMaybe "pil-fun" $ head' args} [options] <language>" cliOpts
+    let langs : Lazy String := joinBy ", " $ Prelude.toList $ keySet supportedLanguages
 
-  let config = foldl (flip apply) defaultConfig options
+    let MkResult options nonOptions [] [] = getOpt Permute cliOpts $ drop 1 args
+        | MkResult {unrecognized=unrecOpts@(_::_), _} => if "help" `elem` unrecOpts
+                                                        then putStrLn usage
+                                                        else die "unrecodnised options \{show unrecOpts}\n\{usage}"
+        | MkResult {errors=es@(_::_), _}              => die "arguments parse errors \{show es}\n\{usage}"
+    let [lang] = nonOptions
+        | []   => die "no language is given, supported languages: \{langs}\n\{usage}"
+        | many => die "too many languages are given\n\{usage}"
+    let Just (ctxt, pp) = lookup lang supportedLanguages
+        | Nothing => die "unknown language '\{lang}', supported languages: \{langs}\n\{usage}"
 
-  runEitherT {m=IO} (run config ctxt) >>= either (die . (++) "Error: ") pure
+    let config = foldl (flip apply) defaultConfig options
+
+    runEitherT {m=IO} (run pp config ctxt) >>= either (die . (++) "Error: ") pure
