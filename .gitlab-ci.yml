@@ -1,0 +1,57 @@
+image: ghcr.io/stefan-hoeck/idris2-pack:latest
+
+
+default:
+  tags:
+    - docker
+
+
+stages:
+  - build
+  - test
+
+
+pack-prepare:
+  stage: build
+  script:
+    - pack update-db
+    - pack switch latest
+    - tar -cvf "pack.tar" --exclude=".cache" "$PACK_DIR"
+  artifacts:
+    paths:
+      - pack.tar
+
+deps-build:
+  stage: build
+  script:
+    - tar -xvf "pack.tar" --one-top-level=/ --touch
+    - pack install-deps dynam
+    # - pack install summary-stat
+    - tar -uvf "pack.tar" --exclude=".cache" "$PACK_DIR"
+  needs:
+    - pack-prepare
+  artifacts:
+    paths:
+      - pack.tar
+
+build:
+  stage: build
+  script:
+    - tar -xvf "pack.tar" --one-top-level=/ --touch
+    - pack build dynam
+    # - pack install dynam
+    - tar -uvf "pack.tar" --exclude=".cache" "$PACK_DIR"
+    - find "$(pwd)" -name '*.tt[cm]' | tar -uvf "pack.tar" --files-from /dev/stdin
+  needs:
+    - deps-build
+  artifacts:
+    paths:
+      - pack.tar
+
+test:
+  stage: test
+  script:
+    - ls -R
+    - ./groovy_verify.sh
+  needs:
+    - build

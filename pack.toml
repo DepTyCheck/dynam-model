@@ -1,7 +1,15 @@
 [install]
-whitelist = [ "deptycheck" ]
+whitelist = [ "deptycheck", "dynam" ]
 
-[custom.all.js]
+[custom.all.dynam]
 type = "local"
 path = "."
-ipkg = "js.ipkg"
+ipkg = "dynam.ipkg"
+
+
+#[custom.all.deptycheck]
+#type = "git"
+#ipkg = "deptycheck.ipkg"
+#url  = "https://github.com/buzden/deptycheck"
+#commit = "a1436c5748c155e5c729c99397ef2fbfac58fc62"
+

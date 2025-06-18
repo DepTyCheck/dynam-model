@@ -1,4 +1,4 @@
-package js
+package dynam
 version = 0.1.0
 -- authors =
 -- maintainers =
@@ -12,21 +12,21 @@ version = 0.1.0
 -- the Idris2 version required (e.g. langversion >= 0.5.1)
 -- langversion
 
+-- prebuild = "sh parallel.sh"
+
 -- packages to add to search path
-depends = deptycheck, prettier
+depends = deptycheck, prettier, getopts, weaker-traversals
 
 -- modules to install
-modules = Js.Playground.Js
-        , Js.Playground.Demo.Pretty
-        , Js.Playground.Pretty
-        , Js.Playground.Usage.Example
-        , Runner
+modules = Dynam.Model.Base
+        , Dynam.Pretty.Base
+        , Dynam.Run.Runner
 
 -- main file (i.e. file to load at REPL)
-main = Runner
+main = Dynam.Run.Runner
 
 -- name of executable
-executable = js-playground
+executable = dynam
 
 -- opts =
 sourcedir = "src"

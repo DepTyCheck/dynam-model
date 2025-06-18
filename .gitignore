@@ -1,2 +1,5 @@
 build/
 *.*~
+
+*.info
+out*
